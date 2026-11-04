@@ -1,0 +1,2397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="appTitleTag">GK Pay - Digital Earning & Finance Hub</title>
+    <!-- Tailwind CSS & Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Cloudflare Turnstile Official Script -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+    <!-- Firebase Compat SDKs (v9.23.0) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        * { font-family: "Plus Jakarta Sans", sans-serif; touch-action: manipulation; box-sizing: border-box; }
+        body { background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 0; }
+
+        .app-card {
+            background: #ffffff;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+        }
+
+        .app-inset {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+        }
+
+        .main-btn {
+            width: 100%; height: 50px; border: none; border-radius: 14px; 
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff; font-size: 14px; font-weight: 700; cursor: pointer;
+            box-shadow: 0 6px 15px rgba(37, 99, 235, 0.25); transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .main-btn:active { transform: scale(0.98); }
+
+        .auth-wrapper { width: 100%; max-width: 400px; padding: 0 16px; }
+        .auth-card {
+            position: relative; width: 100%; min-height: 540px;
+            transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .auth-card.flipped { transform: rotateY(180deg); }
+
+        .form-panel {
+            position: absolute; inset: 0; padding: 30px 22px; border-radius: 28px;
+            background: #ffffff; box-shadow: 0 20px 35px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0; backface-visibility: hidden; overflow-y: auto;
+        }
+
+        .login-panel { visibility: visible; }
+        .signup-panel { transform: rotateY(180deg); visibility: hidden; }
+
+        .auth-card.flipped .login-panel { visibility: hidden; }
+        .auth-card.flipped .signup-panel { visibility: visible; }
+
+        .logo {
+            width: 68px; height: 68px; margin: 0 auto 18px; display: flex;
+            justify-content: center; align-items: center; border-radius: 20px;
+            font-size: 26px; color: #2563eb; background: rgba(37, 99, 235, 0.08);
+            border: 1px solid rgba(37, 99, 235, 0.15); box-shadow: 0 6px 15px rgba(37, 99, 235, 0.1); overflow: hidden;
+        }
+
+        .auth-title { text-align: center; font-size: 22px; color: #0f172a; margin-bottom: 4px; font-weight: 800; }
+        .subtitle { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 24px; font-weight: 500; }
+
+        .input-group { position: relative; width: 100%; margin-bottom: 16px; }
+        .input-group input, .input-group select {
+            width: 100%; height: 50px; border: 1.5px solid #cbd5e1; outline: none; border-radius: 14px;
+            background: #f8fafc; color: #0f172a; font-size: 14px; padding: 0 44px 0 16px; font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .input-group input:focus, .input-group select:focus {
+            border-color: #2563eb; background: #ffffff; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .input-group label {
+            position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+            color: #64748b; font-size: 13px; pointer-events: none; transition: all 0.2s ease; background: #f8fafc; padding: 0 4px;
+        }
+
+        .input-group input:focus ~ label, .input-group input:not(:placeholder-shown) ~ label {
+            top: 0; font-size: 11px; color: #2563eb; font-weight: 700; background: #ffffff;
+        }
+
+        .password-toggle {
+            position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; 
+            display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: #64748b; cursor: pointer; z-index: 10;
+        }
+
+        .switch-area { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 20px; font-size: 13px; color: #64748b; font-weight: 500; }
+        .switch-circle {
+            background: rgba(37, 99, 235, 0.08); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.2); font-weight: 700; padding: 5px 12px; border-radius: 10px; cursor: pointer; transition: 0.2s;
+        }
+        .switch-circle:hover { background: rgba(37, 99, 235, 0.15); }
+
+        #customToast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-120px);
+            background: #0f172a; border: 1px solid #334155; color: #fff; padding: 12px 20px; border-radius: 14px;
+            font-size: 13px; font-weight: 600; z-index: 99999; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 10px;
+        }
+        #customToast.show { transform: translateX(-50%) translateY(0); }
+
+        .floating-action-container {
+            position: fixed; right: 16px; bottom: 85px; display: flex; flex-direction: column; gap: 10px; z-index: 999;
+        }
+        .floating-btn {
+            width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.5); transition: transform 0.2s;
+        }
+        .floating-btn:active { transform: scale(0.9); }
+    </style>
+</head>
+<body class="flex justify-center items-center min-h-screen">
+
+    <div id="customToast">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toastMessage">Notification message</span>
+    </div>
+
+    <!-- SECURITY PIN LOCK OVERLAY -->
+    <div id="pinLockModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99998] flex flex-col justify-center items-center p-6 text-center">
+        <div class="bg-white border border-slate-200 p-6 max-w-sm w-full rounded-[24px] space-y-4 shadow-xl">
+            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl mx-auto border border-blue-100">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3 class="font-extrabold text-slate-900 text-base">Security PIN Lock</h3>
+            <p id="pinLockSubtitle" class="text-xs text-slate-500">Enter your 4-digit security PIN to unlock.</p>
+            <div class="input-group mb-0">
+                <input type="password" id="appSecurityPin" maxlength="4" placeholder="****" class="text-center tracking-widest font-mono text-lg bg-slate-50">
+            </div>
+            <button onclick="verifyOrSetAppPin()" class="main-btn" id="pinActionBtn">Unlock App</button>
+        </div>
+    </div>
+
+    <div id="maintenanceOverlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] flex flex-col justify-center items-center p-6 text-center">
+        <div class="bg-white border border-slate-200 p-6 max-w-sm w-full rounded-[24px] space-y-4 shadow-xl">
+            <div id="maintenanceBannerContainer" class="w-full h-36 rounded-xl overflow-hidden bg-slate-50 flex items-center justify-center border border-slate-200">
+                <img id="maintenanceBannerImg" src="" alt="Update Banner" class="w-full h-full object-cover hidden">
+                <i id="maintenanceDefaultIcon" class="fa-solid fa-screwdriver-wrench text-4xl text-blue-600"></i>
+            </div>
+            <h2 class="text-lg font-extrabold text-slate-900">App Update Available</h2>
+            <p id="maintenanceNoticeText" class="text-xs text-slate-500 font-medium leading-relaxed">Our app has been updated to a newer version. Please update your application to continue earning.</p>
+            <a id="maintenanceDownloadBtn" href="#" target="_blank" class="main-btn flex items-center justify-center text-decoration-none">Update & Download Now</a>
+        </div>
+    </div>
+
+    <div id="app" class="w-full max-w-md h-screen sm:h-[850px] sm:rounded-[36px] bg-slate-50 border border-slate-200 relative flex flex-col overflow-hidden shadow-2xl">
+
+        <div id="floatingControls" class="floating-action-container hidden">
+            <button onclick="openTelegramGroup()" class="floating-btn bg-sky-500 text-white hover:bg-sky-600">
+                <i class="fa-brands fa-telegram text-xl"></i>
+            </button>
+            <button onclick="openAiChatModal()" class="floating-btn bg-gradient-to-tr from-purple-600 to-blue-600 text-white">
+                <i class="fa-solid fa-robot text-lg"></i>
+            </button>
+        </div>
+
+        <!-- 1. AUTH SECTION -->
+        <div id="loginSection" class="flex flex-col justify-center items-center h-full p-6 bg-slate-50 absolute inset-0 z-50 overflow-y-auto">
+            <div class="auth-wrapper">
+                <div class="auth-card" id="authCard">
+
+                    <!-- Login Panel -->
+                    <div class="form-panel login-panel">
+                        <div class="logo" id="loginLogoContainer">
+                            <i class="fa-solid fa-bolt text-2xl text-blue-600" id="loginDefaultLogoIcon"></i>
+                        </div>
+                        <h1 class="auth-title">Welcome Back</h1>
+                        <p class="subtitle">Access your <span class="appNameText">GK Pay</span> portfolio</p>
+
+                        <div>
+                            <div class="input-group">
+                                <input type="text" id="loginIdInput" placeholder=" " required>
+                                <label for="loginIdInput">Mobile Number or Gmail</label>
+                            </div>
+
+                            <div class="input-group" id="passwordFieldContainer">
+                                <input type="password" id="loginPass" placeholder=" " autocomplete="current-password" required>
+                                <label for="loginPass">Account Password</label>
+                                <button type="button" class="password-toggle" onclick="togglePassword('loginPass', 'loginEyeIcon')">
+                                    <i id="loginEyeIcon" class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+
+                            <!-- Real Cloudflare Turnstile Widget for Login -->
+                            <div class="my-3 flex justify-center">
+                                <div class="cf-turnstile" data-sitekey="0x4AAAAAAFyWJRTfkyZEZLk9" data-callback="onLoginTurnstileSuccess"></div>
+                            </div>
+
+                            <div class="flex justify-between items-center mb-5 text-xs text-slate-500 font-semibold">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" class="accent-blue-600 rounded w-4 h-4 bg-white border-slate-300"> Remember me
+                                </label>
+                                <a href="#" id="forgotToggleBtn" onclick="forgotPasswordAction()" class="text-blue-600 font-bold hover:underline">Forgot Password?</a>
+                            </div>
+
+                            <button type="button" id="authSubmitBtn" onclick="handleLoginAction()" class="main-btn">Sign In</button>
+                        </div>
+
+                        <div class="switch-area">
+                            <span>Don't have an account?</span>
+                            <button type="button" class="switch-circle" onclick="flipCard()">Create Account</button>
+                        </div>
+                    </div>
+
+                    <!-- Direct Registration Panel -->
+                    <div class="form-panel signup-panel">
+                        <div class="logo" id="signupLogoContainer">
+                            <i class="fa-solid fa-user-plus text-2xl text-blue-600" id="signupDefaultLogoIcon"></i>
+                        </div>
+                        <h1 class="auth-title">Get Started</h1>
+                        <p class="subtitle">Create a new account on <span class="appNameText">GK Pay</span></p>
+
+                        <div>
+                            <div class="input-group">
+                                <input type="text" id="regPhoneInput" placeholder=" " required>
+                                <label for="regPhoneInput">Mobile Number (01XXXXXXXXX)</label>
+                            </div>
+
+                            <div class="input-group">
+                                <input type="email" id="regEmailInput" placeholder=" " required>
+                                <label for="regEmailInput">Gmail Address (user@gmail.com)</label>
+                            </div>
+
+                            <div class="input-group">
+                                <input type="password" id="regPassInput" placeholder=" " required>
+                                <label for="regPassInput">Account Password</label>
+                                <button type="button" class="password-toggle" onclick="togglePassword('regPassInput', 'regEyeIcon')">
+                                    <i id="regEyeIcon" class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+
+                            <div class="input-group" id="referFieldContainer">
+                                <input type="text" id="regReferCode" placeholder=" ">
+                                <label for="regReferCode">Referral Code (Optional)</label>
+                            </div>
+
+                            <!-- Real Cloudflare Turnstile Widget for Registration -->
+                            <div class="my-3 flex justify-center">
+                                <div class="cf-turnstile" data-sitekey="0x4AAAAAAFyWJRTfkyZEZLk9" data-callback="onRegisterTurnstileSuccess"></div>
+                            </div>
+
+                            <button type="button" onclick="handleRegisterAction()" class="main-btn mt-1">Register Account</button>
+                        </div>
+
+                        <div class="switch-area">
+                            <span>Already have an account?</span>
+                            <button type="button" class="switch-circle" onclick="flipCard()">Sign In</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. USER DASHBOARD -->
+        <div id="dashboardSection" class="hidden flex-1 flex flex-col bg-slate-50 relative h-full overflow-hidden">
+            
+            <!-- STICKY HEADER TOP SECTION -->
+            <div class="sticky top-0 left-0 right-0 z-40 bg-slate-50/90 backdrop-blur-md px-5 pt-5 pb-2 shrink-0">
+                <div class="flex justify-between items-center app-card p-4">
+                    <div class="flex items-center space-x-3">
+                        <div id="appHeaderLogoContainer" class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold overflow-hidden border border-blue-100 shadow-sm">
+                            <i id="appHeaderDefaultIcon" class="fa-solid fa-bolt text-sm"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-1">
+                                <h2 class="font-extrabold text-slate-900 text-sm tracking-tight appNameText">GK Pay</h2>
+                                <i class="fa-solid fa-circle-check text-blue-600 text-xs"></i>
+                            </div>
+                            <p class="text-[10px] text-slate-500 font-medium">Digital Earning Gateway</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openNotificationsModal()" class="w-9 h-9 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 relative shadow-sm hover:bg-slate-50 transition">
+                            <i class="fa-solid fa-bell text-xs"></i>
+                            <span id="notificationBadge" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center hidden">0</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCROLLABLE TAB CONTENTS CONTAINER -->
+            <div class="flex-1 overflow-y-auto relative">
+                
+                <!-- HOME / TASKS TAB -->
+                <div id="tabTasks" class="p-5 space-y-4 pb-20">
+                    <div class="app-card p-5 relative space-y-3 bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/20 border-none">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-[11px] text-blue-100 uppercase tracking-wider font-bold flex items-center">
+                                    <i class="fa-solid fa-shield-halved text-[10px] text-emerald-300 mr-1.5"></i> Total Balance
+                                </p>
+                                <h2 class="text-3xl font-extrabold mt-1 tracking-tight"><span id="userMainBalance">0.00</span> <span class="text-xs font-bold text-blue-200">BDT</span></h2>
+                            </div>
+                            <div class="w-11 h-11 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center text-white border border-white/20">
+                                <i class="fa-solid fa-wallet text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="pt-3 border-t border-white/15 flex justify-between items-center text-xs">
+                            <div>
+                                <span class="text-blue-100 font-medium">Commission:</span>
+                                <p class="font-extrabold text-white text-sm mt-0.5"><span id="userCommBalance">0.00</span> BDT</p>
+                            </div>
+                            <button onclick="switchTab('deposit')" class="bg-white text-blue-900 px-3.5 py-2 rounded-xl font-bold text-xs shadow-sm hover:bg-blue-50 active:scale-95 transition">
+                                <i class="fa-solid fa-coins mr-1"></i> Add Money
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="app-card p-3 flex items-center space-x-3 text-xs text-slate-600 font-medium bg-white border-slate-200 shadow-sm">
+                        <i class="fa-solid fa-envelope-circle-check text-blue-600 text-base shrink-0"></i>
+                        <span id="userSmsStatusText">SMS Sync Active: Real-time Trx Detection Enabled</span>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Available Tasks</h3>
+                            <span id="taskTimerDisplay" class="text-[10px] font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full"><i class="fa-solid fa-arrows-rotate mr-1"></i> Live Portal</span>
+                        </div>
+                        <div class="grid grid-cols-5 gap-1.5 mb-3">
+                            <button onclick="filterTasks('all')" id="catBtn-all" class="bg-blue-600 text-white py-2 rounded-xl text-[11px] font-bold shadow-sm">All</button>
+                            <button onclick="filterTasks('300')" id="catBtn-300" class="bg-white border border-slate-200 text-slate-600 py-2 rounded-xl text-[11px] font-bold">300</button>
+                            <button onclick="filterTasks('500')" id="catBtn-500" class="bg-white border border-slate-200 text-slate-600 py-2 rounded-xl text-[11px] font-bold">500</button>
+                            <button onclick="filterTasks('1000')" id="catBtn-1000" class="bg-white border border-slate-200 text-slate-600 py-2 rounded-xl text-[11px] font-bold">1000</button>
+                            <button onclick="filterTasks('other')" id="catBtn-other" class="bg-white border border-slate-200 text-slate-600 py-2 rounded-xl text-[11px] font-bold">Other</button>
+                        </div>
+
+                        <div id="taskList" class="space-y-3"></div>
+                    </div>
+                </div>
+
+                <!-- DEPOSIT TAB -->
+                <div id="tabDeposit" class="p-5 hidden space-y-4 pb-20">
+                    <div class="app-card p-4">
+                        <h3 class="font-extrabold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-coins text-blue-600 mr-2"></i> Add Money via USDT</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Deposit USDT (TRC20 / BEP20) for instant balance load.</p>
+                    </div>
+
+                    <div id="depositFormContainer" class="app-card p-4 space-y-3">
+                        <div class="app-inset p-3.5 rounded-xl text-xs space-y-2">
+                            <p class="font-bold text-slate-700">Send USDT to Deposit Wallet:</p>
+                            <div class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                                <span id="displayUsdtWallet" class="select-all font-mono font-bold text-blue-600 text-[11px]">Loading...</span>
+                                <button onclick="copyUsdtAddress()" class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-[10px] font-bold hover:bg-blue-100"><i class="fa-regular fa-copy"></i> Copy</button>
+                            </div>
+                            <p class="text-[10px] text-slate-400 font-semibold">1 USDT = 118 BDT (Official Exchange Rate)</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Deposit USDT Amount</label>
+                            <input type="number" id="depositUsdtAmount" placeholder="e.g. 10" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 text-slate-900 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Transaction ID / TxID</label>
+                            <input type="text" id="depositTxId" placeholder="Enter transaction hash" class="w-full px-3.5 py-2.5 bg-white border border-slate-200 text-slate-900 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                        <button onclick="submitUsdtDeposit()" class="main-btn mt-1">Submit Deposit Proof</button>
+                    </div>
+
+                    <div id="depositClosedNotice" class="hidden app-card p-6 text-center space-y-2">
+                        <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-xl mx-auto border border-rose-100">
+                            <i class="fa-solid fa-ban"></i>
+                        </div>
+                        <h4 class="font-extrabold text-rose-600 text-sm">USDT Deposit Suspended</h4>
+                        <p class="text-xs text-rose-500 font-medium">USDT Deposit is currently offline.</p>
+                    </div>
+                </div>
+
+                <!-- HISTORY TAB -->
+                <div id="tabHistory" class="p-5 hidden space-y-4 pb-20">
+                    <div class="app-card p-4">
+                        <h3 class="font-extrabold text-slate-900 text-sm">Activity & Task History</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Verified record of task executions, sells and deposits</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-2">Sell / Balance Records</h4>
+                            <div id="userSellHistoryList" class="space-y-2.5">
+                                <p class="text-xs text-slate-400 app-card p-4 text-center font-medium">Loading sell history...</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-2">Deposit Records</h4>
+                            <div id="userDepositHistoryList" class="space-y-2.5">
+                                <p class="text-xs text-slate-400 app-card p-4 text-center font-medium">Loading deposit history...</p>
+                            </div>
+                        </div>
+
+                        <div class="pt-1">
+                            <h4 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-2">Task Executions</h4>
+                            <div id="userHistoryList" class="space-y-2.5">
+                                <p class="text-xs text-slate-400 app-card p-4 text-center font-medium">Loading task history...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WALLET TAB -->
+                <div id="tabWallet" class="p-5 hidden space-y-4 pb-20">
+                    <div class="app-card p-4">
+                        <h3 class="font-extrabold text-slate-900 text-sm flex items-center"><i class="fa-solid fa-wallet text-blue-600 mr-2"></i> Payment Wallet Accounts</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Bind your personal bKash & Nagad numbers and set active status.</p>
+                    </div>
+
+                    <div class="app-card p-4 space-y-3 relative">
+                        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                            <div class="flex items-center space-x-2">
+                                <span class="bg-pink-600 text-white text-[10px] font-black px-2 py-0.5 rounded">bKash</span>
+                                <span id="bkashOnlineBadge" class="hidden text-[10px] font-bold text-emerald-600 flex items-center"><span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-1"></span> Online</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">bKash Personal Number</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="userBkashWallet" placeholder="01XXXXXXXXX" class="flex-1 px-3.5 py-2.5 bg-white border border-slate-200 text-slate-900 rounded-xl text-xs font-semibold focus:outline-none">
+                                <button onclick="bindSingleWallet('bkash')" class="bg-pink-600 hover:bg-pink-700 text-white px-3.5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition">Bind</button>
+                            </div>
+                        </div>
+                        <div class="app-inset p-3 space-y-2">
+                            <p class="text-[11px] font-extrabold text-slate-700 uppercase">Service Status Options:</p>
+                            <div class="flex items-center space-x-4 text-xs font-bold text-slate-600">
+                                <label class="flex items-center space-x-1.5 cursor-pointer">
+                                    <input type="checkbox" id="bkashActiveBuy" class="w-4 h-4 accent-pink-600 rounded bg-white border-slate-300">
+                                    <span>Active Buy</span>
+                                </label>
+                                <label class="flex items-center space-x-1.5 cursor-pointer">
+                                    <input type="checkbox" id="bkashActiveSell" class="w-4 h-4 accent-pink-600 rounded bg-white border-slate-300">
+                                    <span>Active Sell</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="app-card p-4 space-y-3 relative">
+                        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                            <div class="flex items-center space-x-2">
+                                <span class="bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded">Nagad</span>
+                                <span id="nagadOnlineBadge" class="hidden text-[10px] font-bold text-emerald-600 flex items-center"><span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-1"></span> Online</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Nagad Personal Number</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="userNagadWallet" placeholder="01XXXXXXXXX" class="flex-1 px-3.5 py-2.5 bg-white border border-slate-200 text-slate-900 rounded-xl text-xs font-semibold focus:outline-none">
+                                <button onclick="bindSingleWallet('nagad')" class="bg-orange-600 hover:bg-orange-700 text-white px-3.5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition">Bind</button>
+                            </div>
+                        </div>
+                        <div class="app-inset p-3 space-y-2">
+                            <p class="text-[11px] font-extrabold text-slate-700 uppercase">Service Status Options:</p>
+                            <div class="flex items-center space-x-4 text-xs font-bold text-slate-600">
+                                <label class="flex items-center space-x-1.5 cursor-pointer">
+                                    <input type="checkbox" id="nagadActiveBuy" class="w-4 h-4 accent-orange-600 rounded bg-white border-slate-300">
+                                    <span>Active Buy</span>
+                                </label>
+                                <label class="flex items-center space-x-1.5 cursor-pointer">
+                                    <input type="checkbox" id="nagadActiveSell" class="w-4 h-4 accent-orange-600 rounded bg-white border-slate-300">
+                                    <span>Active Sell</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="saveUserWallets()" class="main-btn">
+                        <i class="fa-solid fa-circle-check mr-1.5"></i> Confirm Service Status
+                    </button>
+                </div>
+
+                <!-- ACCOUNT TAB -->
+                <div id="tabAccount" class="p-5 hidden space-y-4 pb-20">
+                    <div class="flex items-center space-x-3.5 app-card p-4">
+                        <div class="w-13 h-13 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl font-bold shadow-md border border-blue-200">
+                            <i class="fa-solid fa-user-astronaut"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <h4 id="profileEmail" class="font-extrabold text-slate-900 text-sm truncate max-w-[150px]">user@gmail.com</h4>
+                                <span class="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold px-2 py-0.5 rounded-full">Active</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5 font-medium">
+                                ID: <b class="text-blue-600 font-bold" id="profileUserId">Loading...</b>
+                            </p>
+                            <div class="flex items-center space-x-2 mt-1.5 text-[11px] font-bold text-amber-600">
+                                <i class="fa-solid fa-medal text-xs"></i>
+                                <span id="userCompletedTaskCount">Completed Tasks: 0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="app-card p-4 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider">Referral Network</span>
+                                <h3 class="text-sm font-extrabold text-slate-900 mt-0.5">0.30% Commission Bonus</h3>
+                            </div>
+                            <div class="bg-blue-50 text-blue-600 p-2.5 rounded-xl border border-blue-100">
+                                <i class="fa-solid fa-user-group text-sm"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500 font-medium leading-relaxed">Earn automatic 0.30% commission every time your referred partner completes a task!</p>
+                        <div class="app-inset p-3 rounded-xl flex justify-between items-center text-xs">
+                            <span class="font-semibold text-slate-500">Invite Code: <b class="text-slate-900 font-mono font-bold" id="inviteCode">Loading...</b></span>
+                            <button onclick="copyInviteCode()" class="bg-white border border-slate-200 text-blue-600 px-3 py-1 rounded-lg font-bold text-[10px] shadow-sm"><i class="fa-regular fa-copy"></i> Copy</button>
+                        </div>
+                        <div class="pt-2 border-t border-slate-100 flex justify-between text-xs font-bold text-slate-600">
+                            <span>Referred Users: <b id="totalReferralCount" class="text-blue-600">0</b></span>
+                            <span>Total Earned: <b id="totalReferralEarn" class="text-emerald-600">0.00</b> BDT</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <button onclick="shareInviteLink()" class="main-btn text-[11px] h-[42px]">
+                                <i class="fa-solid fa-share-nodes mr-1.5"></i> Share Link
+                            </button>
+                            <button onclick="shareViaTelegram()" class="w-full h-[42px] bg-sky-500 hover:bg-sky-600 text-white rounded-[14px] font-bold text-xs shadow-sm transition flex items-center justify-center">
+                                <i class="fa-brands fa-telegram mr-1.5 text-base"></i> Telegram
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="app-card rounded-2xl divide-y divide-slate-100 text-xs shadow-sm overflow-hidden font-bold">
+                        <div onclick="openAiChatModal()" class="p-3.5 flex justify-between items-center cursor-pointer text-slate-700 hover:bg-slate-50 transition">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center"><i class="fa-solid fa-robot text-xs"></i></div>
+                                <span>AI Virtual Assistant Chat</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-slate-400 text-[10px]"></i>
+                        </div>
+
+                        <div onclick="openSupportLink()" class="p-3.5 flex justify-between items-center cursor-pointer text-slate-700 hover:bg-slate-50 transition">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-headset text-xs"></i></div>
+                                <span>Customer Support</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-slate-400 text-[10px]"></i>
+                        </div>
+
+                        <div onclick="openTelegramGroup()" class="p-3.5 flex justify-between items-center cursor-pointer text-slate-700 hover:bg-slate-50 transition">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center"><i class="fa-brands fa-telegram text-xs"></i></div>
+                                <span>Official Telegram Group</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-slate-400 text-[10px]"></i>
+                        </div>
+
+                        <div onclick="openComplainModal()" class="p-3.5 flex justify-between items-center cursor-pointer text-slate-700 hover:bg-slate-50 transition">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center"><i class="fa-solid fa-circle-exclamation text-xs"></i></div>
+                                <span>Support & Complaint Box</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-slate-400 text-[10px]"></i>
+                        </div>
+
+                        <div onclick="openChangePasswordModal()" class="p-3.5 flex justify-between items-center cursor-pointer text-slate-700 hover:bg-slate-50 transition">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-key text-xs"></i></div>
+                                <span>Change Password</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-slate-400 text-[10px]"></i>
+                        </div>
+
+                        <div onclick="handleLogout()" class="p-3.5 flex justify-between items-center cursor-pointer text-red-600 hover:bg-red-50 transition">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-7 h-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i class="fa-solid fa-right-from-bracket text-xs"></i></div>
+                                <span>Logout Account</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-slate-400 text-[10px]"></i>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Fixed Bottom Nav -->
+            <div class="sticky bottom-0 left-0 right-0 w-full bg-white border-t border-slate-200 flex justify-around py-3 z-50 shadow-lg shrink-0">
+                <button onclick="switchTab('tasks')" id="navTasksBtn" class="text-blue-600 font-extrabold text-[10px] flex flex-col items-center space-y-1 transition"><i class="fa-solid fa-house text-lg"></i> <span>Home</span></button>
+                <button onclick="switchTab('deposit')" id="navDepositBtn" class="text-slate-400 font-bold text-[10px] flex flex-col items-center space-y-1 transition"><i class="fa-solid fa-coins text-lg"></i> <span>Deposit</span></button>
+                <button onclick="switchTab('history')" id="navHistoryBtn" class="text-slate-400 font-bold text-[10px] flex flex-col items-center space-y-1 transition"><i class="fa-solid fa-clock-rotate-left text-lg"></i> <span>History</span></button>
+                <button onclick="switchTab('wallet')" id="navWalletBtn" class="text-slate-400 font-bold text-[10px] flex flex-col items-center space-y-1 transition"><i class="fa-solid fa-wallet text-lg"></i> <span>Wallet</span></button>
+                <button onclick="switchTab('account')" id="navAccountBtn" class="text-slate-400 font-bold text-[10px] flex flex-col items-center space-y-1 transition"><i class="fa-solid fa-user text-lg"></i> <span>Account</span></button>
+            </div>
+        </div>
+
+        <!-- 3. ADMIN PANEL -->
+        <div id="adminSection" class="hidden flex-1 flex flex-col bg-slate-100 text-slate-900 h-full overflow-hidden">
+            <div class="bg-white text-slate-900 p-4 flex justify-between items-center shadow-sm border-b border-slate-200 shrink-0">
+                <div>
+                    <h2 class="font-bold text-sm"><i class="fa-solid fa-user-shield text-blue-600 mr-1.5"></i> <span class="appNameText">GK Pay</span> Admin Hub</h2>
+                    <p class="text-[11px] text-slate-500">Live Management & Task Creator</p>
+                </div>
+                <button onclick="handleLogout()" class="bg-red-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-red-700 transition">Logout</button>
+            </div>
+
+            <div class="p-4 flex-1 overflow-y-auto space-y-4 pb-12">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold">Total App Users</p>
+                        <h3 id="adminTotalUsersCount" class="text-xl font-black text-blue-600 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold">Pending Tasks</p>
+                        <h3 id="adminPendingTasksCount" class="text-xl font-black text-amber-600 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold">Pending Deposits</p>
+                        <h3 id="adminPendingDepositsCount" class="text-xl font-black text-cyan-600 mt-1">0</h3>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold">Received SMS Logs</p>
+                        <h3 id="adminTotalSmsCount" class="text-xl font-black text-emerald-600 mt-1">0</h3>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-rose-100 p-4 rounded-2xl space-y-3 shadow-sm">
+                    <h3 class="text-xs uppercase font-extrabold text-rose-600 tracking-wider flex items-center">
+                        <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Maintenance & App Update Manager
+                    </h3>
+                    <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-xs font-bold text-slate-700">Maintenance Mode:</span>
+                        <button id="adminMaintenanceToggleBtn" onclick="toggleMaintenanceMode()" class="px-3 py-1 rounded-lg text-xs font-bold transition bg-emerald-600 text-white">Offline (OFF)</button>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Upload Maintenance Banner Image</label>
+                        <input type="file" id="adminMaintenanceBannerFileInput" accept="image/*" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Update Notice Message</label>
+                        <textarea id="adminUpdateNoticeInput" rows="2" placeholder="App has been updated. Please download new version." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">New App Download Link</label>
+                        <input type="text" id="adminUpdateLinkInput" placeholder="https://t.me/your_apk_link" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none font-mono">
+                    </div>
+                    <button onclick="saveMaintenanceSettings()" class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-sm">Save Maintenance & Update Settings</button>
+                </div>
+
+                <div class="bg-white border border-indigo-100 p-4 rounded-2xl space-y-3 shadow-sm">
+                    <h3 class="text-xs uppercase font-extrabold text-indigo-600 tracking-wider flex items-center">
+                        <i class="fa-solid fa-pen-nib mr-1.5"></i> App Branding Manager (Name & Logo)
+                    </h3>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">App Name</label>
+                        <input type="text" id="adminAppNameInput" placeholder="Enter App Name (e.g. GK Pay)" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none font-semibold">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Upload New Logo Image</label>
+                        <input type="file" id="adminAppLogoFileInput" accept="image/*" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none">
+                    </div>
+                    <button onclick="updateAppBranding()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-sm">Save App Name & Logo</button>
+                </div>
+
+                <div class="bg-white border border-amber-100 p-4 rounded-2xl space-y-3 shadow-sm">
+                    <h3 class="text-xs uppercase font-extrabold text-amber-600 tracking-wider flex items-center">
+                        <i class="fa-solid fa-toggle-on mr-1.5"></i> Gateway Status (bKash & Nagad Online/Offline)
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <span class="text-xs font-bold text-slate-700">bKash Gateway:</span>
+                            <button id="adminBkashStatusBtn" onclick="toggleGatewayStatus('bkash')" class="px-3 py-1 rounded-lg text-xs font-bold transition bg-emerald-600 text-white">Online</button>
+                        </div>
+                        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <span class="text-xs font-bold text-slate-700">Nagad Gateway:</span>
+                            <button id="adminNagadStatusBtn" onclick="toggleGatewayStatus('nagad')" class="px-3 py-1 rounded-lg text-xs font-bold transition bg-emerald-600 text-white">Online</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-cyan-100 p-4 rounded-2xl space-y-3 shadow-sm">
+                    <h3 class="text-xs uppercase font-extrabold text-cyan-600 tracking-wider flex items-center">
+                        <i class="fa-solid fa-coins mr-1.5"></i> USDT Deposit & Wallet Manager
+                    </h3>
+                    <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-xs font-bold text-slate-700">USDT Deposit Status:</span>
+                        <button id="adminDepositToggleBtn" onclick="toggleDepositSystem()" class="px-4 py-1.5 rounded-lg text-xs font-bold transition bg-emerald-600 text-white">Active (ON)</button>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">USDT Wallet Address</label>
+                        <div class="flex space-x-2">
+                            <input type="text" id="adminUsdtWalletInput" placeholder="Enter USDT address" class="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none font-semibold font-mono">
+                            <button onclick="updateUsdtWalletAddress()" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shrink-0">Update</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-blue-100 p-4 rounded-2xl space-y-3 shadow-sm">
+                    <h3 id="adminTaskFormTitle" class="text-xs uppercase font-extrabold text-blue-600 tracking-wider flex items-center">
+                        <i class="fa-solid fa-plus-circle mr-1.5"></i> Create New Task
+                    </h3>
+                    <input type="hidden" id="editingTaskKey" value="">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Payment Method</label>
+                        <select id="adminTaskMethod" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none">
+                            <option value="bKash">bKash</option>
+                            <option value="Nagad">Nagad</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Upload Method Logo Image</label>
+                        <input type="file" id="adminTaskLogoFileInput" accept="image/*" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Target Account Number</label>
+                        <input type="text" id="adminTaskNumber" placeholder="01XXXXXXXXX" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none font-semibold">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Task Amount (BDT)</label>
+                            <input type="number" id="adminTaskAmount" placeholder="e.g. 500" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Commission (BDT)</label>
+                            <input type="number" id="adminTaskCommission" placeholder="e.g. 20" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none">
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="adminTaskSubmitBtn" onclick="adminCreateOrUpdateTask()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-sm">Publish Task Live (5 Min Timer)</button>
+                        <button id="adminTaskCancelBtn" onclick="resetAdminTaskForm()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold transition">Cancel</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xs uppercase font-extrabold text-blue-600 tracking-wider mb-2"><i class="fa-solid fa-list-check mr-1"></i> Manage Active Tasks</h3>
+                    <div id="adminActiveTaskList" class="space-y-2 max-h-60 overflow-y-auto">
+                        <p class="text-xs text-slate-400 bg-white p-4 rounded-2xl border border-slate-200 text-center">Loading active tasks...</p>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-slate-200 p-4 rounded-2xl space-y-3 shadow-sm">
+                    <h3 class="text-xs uppercase font-extrabold text-cyan-600 tracking-wider flex items-center">
+                        <i class="fa-solid fa-sliders mr-1.5"></i> User Balance Manager (Minus = Sell)
+                    </h3>
+                    <input type="text" id="adminTargetLogin" placeholder="User Mobile or Gmail" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none font-semibold">
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sell Payment Method (bKash / Nagad)</label>
+                        <select id="adminSellMethod" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none font-semibold">
+                            <option value="bKash">bKash</option>
+                            <option value="Nagad">Nagad</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sell Number (bKash/Nagad Number where sent)</label>
+                        <input type="text" id="adminSellNumber" placeholder="01XXXXXXXXX (For Minus/Sell)" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none font-semibold">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="adminAddMain" placeholder="Account Bal Amount" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none">
+                        <input type="number" id="adminAddComm" placeholder="Comm Bal Amount" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none">
+                    </div>
+                    <div class="flex space-x-2 pt-1">
+                        <button onclick="adminUpdateUserBalance('plus')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-xs font-bold transition"><i class="fa-solid fa-plus mr-1"></i> Plus (+)</button>
+                        <button onclick="adminUpdateUserBalance('minus')" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-xl text-xs font-bold transition"><i class="fa-solid fa-minus mr-1"></i> Minus (-) [Sell]</button>
+                        <button onclick="adminUpdateUserBalance('zero')" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition">Zero Out</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xs uppercase font-extrabold text-rose-600 tracking-wider mb-2"><i class="fa-solid fa-envelope-open-text mr-1"></i> User Complaints</h3>
+                    <div id="adminComplaintList" class="space-y-3 max-h-60 overflow-y-auto">
+                        <p class="text-xs text-slate-400 bg-white p-4 rounded-2xl border border-slate-200 text-center">Loading complaints...</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xs uppercase font-extrabold text-blue-600 tracking-wider mb-2">All Users & Control</h3>
+                    <div id="adminUserListContainer" class="space-y-2 max-h-60 overflow-y-auto">
+                        <p class="text-xs text-slate-400 bg-white p-4 rounded-2xl border border-slate-200 text-center">Loading users...</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xs uppercase font-extrabold text-cyan-600 tracking-wider mb-2">Pending USDT Deposits</h3>
+                    <div id="adminDepositList" class="space-y-3">
+                        <p class="text-xs text-slate-400 bg-white p-4 rounded-2xl border border-slate-200 text-center">Loading deposits...</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xs uppercase font-extrabold text-amber-600 tracking-wider mb-2">Pending Task Submissions</h3>
+                    <div id="adminSubmissionList" class="space-y-3">
+                        <p class="text-xs text-slate-400 bg-white p-4 rounded-2xl border border-slate-200 text-center">Loading submissions...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODALS -->
+        <div id="taskModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4 z-[9999]">
+            <div class="bg-white border border-slate-200 p-6 w-full max-w-sm relative space-y-3 rounded-[24px] shadow-xl">
+                <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200"><i class="fa-solid fa-xmark text-base"></i></button>
+                <div id="modalContent"></div>
+            </div>
+        </div>
+
+        <!-- AI CHAT ASSISTANT MODAL -->
+        <div id="aiChatModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4 z-[9999]">
+            <div class="bg-white border border-slate-200 p-5 w-full max-w-sm relative h-[520px] flex flex-col rounded-[24px] shadow-xl">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold text-sm border border-purple-100">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-extrabold text-sm text-slate-900">GK Pay AI Assistant</h3>
+                            <p class="text-[10px] text-emerald-600 font-bold">Online 24/7 Live Support</p>
+                        </div>
+                    </div>
+                    <button onclick="closeAiChatModal()" class="text-slate-400 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+                
+                <div id="aiChatMessages" class="flex-1 overflow-y-auto p-2 space-y-3 text-xs my-2">
+                    <div class="bg-slate-100 border border-slate-200 p-3 rounded-2xl text-slate-700 max-w-[85%]">
+                        Assalamu Alaikum! How can I help you today with your GK Pay account, task execution, or deposits?
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100 flex space-x-2">
+                    <input type="text" id="aiChatInput" placeholder="Ask AI assistant..." class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs font-semibold focus:outline-none focus:border-purple-600">
+                    <button onclick="sendAiMessage()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="notifModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4 z-[9999]">
+            <div class="bg-white border border-slate-200 p-6 w-full max-w-sm relative max-h-[80vh] flex flex-col rounded-[24px] shadow-xl">
+                <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                    <h3 class="font-extrabold text-base text-slate-900"><i class="fa-solid fa-bell text-blue-600 mr-2"></i> Notifications</h3>
+                    <button onclick="closeNotificationsModal()" class="text-slate-400 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+                <div id="notifModalList" class="overflow-y-auto space-y-3 flex-1">
+                    <p class="text-xs text-slate-400 text-center py-6">No notifications available.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="complainModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4 z-[9999]">
+            <div class="bg-white border border-slate-200 p-6 w-full max-w-sm relative space-y-3 rounded-[24px] shadow-xl">
+                <button onclick="closeComplainModal()" class="absolute top-4 right-4 text-slate-400 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200"><i class="fa-solid fa-xmark text-base"></i></button>
+                <h4 class="font-extrabold text-rose-600 text-sm uppercase tracking-wider flex items-center"><i class="fa-solid fa-headset mr-2"></i> Support Box</h4>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Subject</label>
+                    <input type="text" id="complainSubject" placeholder="e.g. Deposit Issue" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Details Message</label>
+                    <textarea id="complainMessage" placeholder="Describe issue..." rows="3" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600"></textarea>
+                </div>
+                <button onclick="submitUserComplaint()" class="main-btn mt-1">Submit Ticket</button>
+            </div>
+        </div>
+
+        <div id="passwordModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4 z-[9999]">
+            <div class="bg-white border border-slate-200 p-6 w-full max-w-sm relative space-y-3 rounded-[24px] shadow-xl">
+                <button onclick="closeChangePasswordModal()" class="absolute top-4 right-4 text-slate-400 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200"><i class="fa-solid fa-xmark text-base"></i></button>
+                <h4 class="font-extrabold text-slate-900 text-sm uppercase tracking-wider flex items-center"><i class="fa-solid fa-key text-blue-600 mr-2"></i> Change Password</h4>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Old Password</label>
+                    <input type="password" id="oldPassInput" placeholder="Enter current password" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">New Password</label>
+                    <input type="password" id="newPassInput" placeholder="Enter new password" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600">
+                </div>
+                <button onclick="updateUserPassword()" class="main-btn mt-1">Update Password</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JS Logic -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAGq_a-2twoBAvZW9ShUlTbGdvRJ2k9Rvs",
+            authDomain: "speed-pay-9b6f4.firebaseapp.com",
+            databaseURL: "https://speed-pay-9b6f4-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "speed-pay-9b6f4",
+            storageBucket: "speed-pay-9b6f4.firebasestorage.app",
+            messagingSenderId: "159330019173",
+            appId: "1:159330019173:web:8ea4c6f810dcf70ffb638c",
+            measurementId: "G-6PHQ1LQDG2"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let currentUserKey = null;
+        let userDataCache = {};
+        let authMode = 'login';
+        let tasks = [];
+        let currentFilter = 'all';
+        let submittedTaskNumbers = [];
+        let activeOpenedTaskKey = null;
+        let globalUsdtSettings = { address: "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE", active: true };
+        let gatewaySettings = { bkash: true, nagad: true };
+        let appBranding = { appName: "GK Pay", appLogo: "" };
+        let maintenanceSettings = { active: false, bannerUrl: "", notice: "", downloadLink: "" };
+        
+        let loginTurnstileVerified = false;
+        let registerTurnstileVerified = false;
+
+        function onLoginTurnstileSuccess(token) {
+            loginTurnstileVerified = true;
+        }
+
+        function onRegisterTurnstileSuccess(token) {
+            registerTurnstileVerified = true;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('customToast');
+            const msgEl = document.getElementById('toastMessage');
+            const iconEl = document.getElementById('toastIcon');
+
+            msgEl.innerText = message;
+            if(type === 'success') {
+                iconEl.className = "fa-solid fa-circle-check text-emerald-400 text-sm";
+            } else {
+                iconEl.className = "fa-solid fa-triangle-exclamation text-amber-400 text-sm";
+            }
+
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        function getSafeKey(str) { return str ? str.toLowerCase().replace(/[^a-z0-9]/g, "_") : "guest_user"; }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            listenAppBranding();
+            listenMaintenanceSettings();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            let refCode = urlParams.get('ref');
+            if (refCode) {
+                localStorage.setItem('gkpay_pending_ref', refCode);
+                const refInput = document.getElementById('regReferCode');
+                if (refInput) refInput.value = refCode;
+            } else {
+                let savedRef = localStorage.getItem('gkpay_pending_ref');
+                if (savedRef) {
+                    const refInput = document.getElementById('regReferCode');
+                    if (refInput) refInput.value = savedRef;
+                }
+            }
+
+            const savedKey = localStorage.getItem('gkpay_current_user_key');
+            if (savedKey) {
+                db.ref('users/' + savedKey).once('value', (snapshot) => {
+                    let userVal = snapshot.val();
+                    if (userVal && !userVal.isBlocked) {
+                        loginSuccess(savedKey, userVal);
+                    } else {
+                        localStorage.removeItem('gkpay_current_user_key');
+                    }
+                });
+            }
+            listenTasksFromFirebase();
+            listenUsdtSettings();
+            listenGatewaySettings();
+        });
+
+        function handleLoginAction() {
+            let inputId = document.getElementById('loginIdInput').value.trim().toLowerCase();
+            let pass = document.getElementById('loginPass').value.trim();
+
+            if (inputId === 'admin@gkpay.com' && pass === '101024') {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('adminSection').classList.remove('hidden');
+                document.getElementById('floatingControls').classList.add('hidden');
+                initAdminPanel();
+                return;
+            }
+
+            if (!inputId || !pass) {
+                showToast('Please enter Mobile Number / Gmail and password!', 'error');
+                return;
+            }
+
+            if (!loginTurnstileVerified) {
+                showToast('Please complete the Cloudflare verification first!', 'error');
+                return;
+            }
+
+            db.ref('users').once('value', (snapshot) => {
+                let users = snapshot.val();
+                let matchedKey = null;
+                let matchedUser = null;
+
+                if (users) {
+                    Object.keys(users).forEach(key => {
+                        let u = users[key];
+                        if (u.email && u.email.toLowerCase() === inputId) {
+                            matchedKey = key;
+                            matchedUser = u;
+                        } else if (u.phone && u.phone === inputId) {
+                            matchedKey = key;
+                            matchedUser = u;
+                        }
+                    });
+                }
+
+                if (!matchedUser) {
+                    showToast('Account not found with this Mobile Number or Gmail!', 'error');
+                    return;
+                }
+
+                if (matchedUser.isBlocked) {
+                    showToast('Your account is blocked!', 'error');
+                    return;
+                }
+
+                if (matchedUser.password !== pass) {
+                    showToast('Incorrect password!', 'error');
+                    return;
+                }
+
+                currentUserKey = matchedKey;
+                userDataCache = matchedUser;
+                checkPinLockRequirement(matchedUser);
+            });
+        }
+
+        function handleRegisterAction() {
+            let phone = document.getElementById('regPhoneInput').value.trim();
+            let email = document.getElementById('regEmailInput').value.trim();
+            let pass = document.getElementById('regPassInput').value.trim();
+            let referCode = document.getElementById('regReferCode').value.trim();
+
+            if (!phone || phone.length < 11 || !email || !email.includes('@gmail.com') || !pass) {
+                showToast('Please fill up all required fields with valid mobile and Gmail!', 'error');
+                return;
+            }
+
+            if (!registerTurnstileVerified) {
+                showToast('Please complete the Cloudflare verification first!', 'error');
+                return;
+            }
+
+            let safeKey = getSafeKey(email);
+
+            db.ref('users/' + safeKey).once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    showToast('Account with this Gmail already exists!', 'error');
+                    return;
+                }
+
+                let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let randomStr = '';
+                for (let i = 0; i < 6; i++) randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
+                let myInviteCode = 'GK_' + randomStr;
+
+                let newUser = {
+                    phone: phone,
+                    email: email,
+                    password: pass,
+                    commBalance: 0,
+                    mainBalance: 0,
+                    inviteCode: myInviteCode,
+                    referredBy: referCode || 'None',
+                    bkashWallet: '',
+                    nagadWallet: '',
+                    bkashBuy: false,
+                    bkashSell: false,
+                    nagadBuy: false,
+                    nagadSell: false,
+                    isBlocked: false,
+                    securityPin: ''
+                };
+
+                db.ref('users/' + safeKey).set(newUser, (err) => {
+                    if (!err) {
+                        showToast('Account registered successfully! Please sign in.');
+                        flipCard();
+                    } else {
+                        showToast('Registration failed!', 'error');
+                    }
+                });
+            });
+        }
+
+        function openAiChatModal() { 
+            document.getElementById('aiChatModal').classList.remove('hidden'); 
+            const chatInput = document.getElementById('aiChatInput');
+            if(chatInput) {
+                chatInput.focus();
+                chatInput.onkeypress = function(e) {
+                    if (e.key === 'Enter') {
+                        sendAiMessage();
+                    }
+                };
+            }
+        }
+        function closeAiChatModal() { document.getElementById('aiChatModal').classList.add('hidden'); }
+
+        function sendAiMessage() {
+            const input = document.getElementById('aiChatInput');
+            if(!input) return;
+            const msg = input.value.trim();
+            if(!msg) return;
+
+            const chatMessages = document.getElementById('aiChatMessages');
+            
+            chatMessages.innerHTML += `
+                <div class="flex justify-end my-1">
+                    <div class="bg-blue-600 text-white p-3 rounded-2xl max-w-[85%] font-medium text-xs shadow-sm">
+                        ${msg}
+                    </div>
+                </div>
+            `;
+            input.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            const typingId = 'typing_' + Date.now();
+            chatMessages.innerHTML += `
+                <div id="${typingId}" class="flex justify-start my-1">
+                    <div class="bg-slate-100 border border-slate-200 p-3 rounded-2xl text-slate-500 max-w-[85%] text-xs font-medium italic">
+                        <i class="fa-solid fa-circle-notch fa-spin mr-1 text-purple-600"></i> AI is thinking...
+                    </div>
+                </div>
+            `;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            setTimeout(() => {
+                const typingEl = document.getElementById(typingId);
+                if(typingEl) typingEl.remove();
+
+                let lowerMsg = msg.toLowerCase();
+                let aiResponse = "Apnar proshner jonno dhonnobad! Unnayon/Payment ba Account somporkito aro bistarito jante amader Official Telegram Group-e join korun ba Support Box-e ticket open korun.";
+                
+                if (lowerMsg.includes('deposit') || lowerMsg.includes('usdt') || lowerMsg.includes('money') || lowerMsg.includes('taka')) {
+                    aiResponse = "Taka/Balance add korar jonno 'Deposit' tab-e jan. Sekhane dewa USDT TRC20/BEP20 wallet address-e USDT pathiye TxID ebong Amount submit korun. Admin verify kore balance add kore dibe.";
+                } else if (lowerMsg.includes('task') || lowerMsg.includes('kaj') || lowerMsg.includes('earn') || lowerMsg.includes('work')) {
+                    aiResponse = "Home tab-e thaka available task-gulo dekhun. Task start kare targeted bKash/Nagad number-e exact amount send korun ebong TrxID submit kore apnar reward + bonus balance claim korun!";
+                } else if (lowerMsg.includes('withdraw') || lowerMsg.includes('sell') || lowerMsg.includes('pay out')) {
+                    aiResponse = "Withdraw / Sell korar jonno Wallet tab-e giye apnar bKash ba Nagad number bind korun ebong Active Buy/Sell toggle ON korun.";
+                } else if (lowerMsg.includes('refer') || lowerMsg.includes('invite') || lowerMsg.includes('link')) {
+                    aiResponse = "Account tab-e giye apnar Referral Code ba Share Link copy korun. Apnar refer-e keo registration kore task complete kore apni instant 0.30% commission bonus paben!";
+                } else if (lowerMsg.includes('pin') || lowerMsg.includes('lock') || lowerMsg.includes('password')) {
+                    aiResponse = "App Security PIN ba Password change korar jonno Account tab-er 'Change Password' option bebohar korun.";
+                } else if (lowerMsg.includes('hi') || lowerMsg.includes('hello') || lowerMsg.includes('assalam')) {
+                    aiResponse = "Walaikum Assalam! GK Pay Live AI Assistant-e apnake shagotom. Kicave sahajjo korte pari?";
+                }
+
+                chatMessages.innerHTML += `
+                    <div class="flex justify-start my-1">
+                        <div class="bg-slate-100 border border-slate-200 p-3 rounded-2xl text-slate-700 max-w-[85%] font-medium text-xs shadow-sm">
+                            ${aiResponse}
+                        </div>
+                    </div>
+                `;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 700);
+        }
+
+        function listenAppBranding() {
+            db.ref('settings/branding').on('value', (snap) => {
+                let val = snap.val();
+                if(val) appBranding = val;
+                else { appBranding = { appName: "GK Pay", appLogo: "" }; db.ref('settings/branding').set(appBranding); }
+                applyAppBrandingUI();
+            });
+        }
+
+        function listenMaintenanceSettings() {
+            db.ref('settings/maintenance').on('value', (snap) => {
+                let val = snap.val();
+                if(val) maintenanceSettings = val;
+                else { maintenanceSettings = { active: false, bannerUrl: "", notice: "", downloadLink: "" }; db.ref('settings/maintenance').set(maintenanceSettings); }
+                applyMaintenanceUI();
+            });
+        }
+
+        function applyMaintenanceUI() {
+            const overlay = document.getElementById('maintenanceOverlay');
+            const bannerImg = document.getElementById('maintenanceBannerImg');
+            const defaultIcon = document.getElementById('maintenanceDefaultIcon');
+            const noticeText = document.getElementById('maintenanceNoticeText');
+            const downloadBtn = document.getElementById('maintenanceDownloadBtn');
+
+            const toggleBtn = document.getElementById('adminMaintenanceToggleBtn');
+            const noticeInput = document.getElementById('adminUpdateNoticeInput');
+            const linkInput = document.getElementById('adminUpdateLinkInput');
+
+            if(toggleBtn) {
+                if(maintenanceSettings.active) {
+                    toggleBtn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition bg-rose-600 text-white';
+                    toggleBtn.innerText = 'Online (ON - Update Mode)';
+                } else {
+                    toggleBtn.className = 'px-3 py-1 rounded-lg text-xs font-bold transition bg-emerald-600 text-white';
+                    toggleBtn.innerText = 'Offline (OFF)';
+                }
+            }
+            if(noticeInput && document.activeElement !== noticeInput) noticeInput.value = maintenanceSettings.notice || '';
+            if(linkInput && document.activeElement !== linkInput) linkInput.value = maintenanceSettings.downloadLink || '';
+
+            if (maintenanceSettings.active) {
+                overlay.classList.remove('hidden');
+                if(maintenanceSettings.bannerUrl) {
+                    bannerImg.src = maintenanceSettings.bannerUrl;
+                    bannerImg.classList.remove('hidden');
+                    defaultIcon.classList.add('hidden');
+                } else {
+                    bannerImg.classList.add('hidden');
+                    defaultIcon.classList.remove('hidden');
+                }
+                if(maintenanceSettings.notice) noticeText.innerText = maintenanceSettings.notice;
+                if(maintenanceSettings.downloadLink) downloadBtn.href = maintenanceSettings.downloadLink;
+                else downloadBtn.href = '#';
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function toggleMaintenanceMode() {
+            let newState = !maintenanceSettings.active;
+            db.ref('settings/maintenance/active').set(newState, (err) => {
+                if(!err) showToast(`Maintenance & Update mode ${newState ? 'activated' : 'deactivated'}.`);
+            });
+        }
+
+        function saveMaintenanceSettings() {
+            let notice = document.getElementById('adminUpdateNoticeInput').value.trim();
+            let downloadLink = document.getElementById('adminUpdateLinkInput').value.trim();
+            let fileInput = document.getElementById('adminMaintenanceBannerFileInput');
+
+            let processSave = (bannerBase64) => {
+                let updated = {
+                    active: maintenanceSettings.active,
+                    bannerUrl: bannerBase64 || maintenanceSettings.bannerUrl || '',
+                    notice: notice || maintenanceSettings.notice,
+                    downloadLink: downloadLink || maintenanceSettings.downloadLink
+                };
+
+                db.ref('settings/maintenance').set(updated, (err) => {
+                    if(!err) {
+                        showToast('Maintenance settings & banner saved successfully!');
+                        document.getElementById('adminMaintenanceBannerFileInput').value = '';
+                    } else {
+                        showToast('Failed to save settings.', 'error');
+                    }
+                });
+            };
+
+            if (fileInput.files && fileInput.files[0]) {
+                let reader = new FileReader();
+                reader.onload = function(e) { processSave(e.target.result); };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                processSave('');
+            }
+        }
+
+        function applyAppBrandingUI() {
+            let name = appBranding.appName || "GK Pay";
+            let logo = appBranding.appLogo || "";
+
+            document.getElementById('appTitleTag').innerText = name + " - Digital Earning & Finance Hub";
+            document.querySelectorAll('.appNameText').forEach(el => el.innerText = name);
+
+            const adminNameInput = document.getElementById('adminAppNameInput');
+            if (adminNameInput && document.activeElement !== adminNameInput) adminNameInput.value = name;
+
+            let renderLogo = (containerId, defaultIconId) => {
+                let container = document.getElementById(containerId);
+                let defaultIcon = document.getElementById(defaultIconId);
+                if (!container) return;
+                
+                if (logo) {
+                    let img = container.querySelector('img');
+                    if (!img) {
+                        img = document.createElement('img');
+                        img.className = 'w-full h-full object-cover rounded-2xl';
+                        container.appendChild(img);
+                    }
+                    img.src = logo;
+                    img.style.display = 'block';
+                    if (defaultIcon) defaultIcon.style.display = 'none';
+                } else {
+                    let img = container.querySelector('img');
+                    if (img) img.style.display = 'none';
+                    if (defaultIcon) defaultIcon.style.display = 'inline-block';
+                }
+            };
+
+            renderLogo('loginLogoContainer', 'loginDefaultLogoIcon');
+            renderLogo('signupLogoContainer', 'signupDefaultLogoIcon');
+            renderLogo('appHeaderLogoContainer', 'appHeaderDefaultIcon');
+        }
+
+        function updateAppBranding() {
+            let newName = document.getElementById('adminAppNameInput').value.trim();
+            let fileInput = document.getElementById('adminAppLogoFileInput');
+
+            if(!newName) { showToast('Please enter an App Name!', 'error'); return; }
+
+            let saveBranding = (logoData) => {
+                let updated = { appName: newName, appLogo: logoData || appBranding.appLogo || '' };
+                db.ref('settings/branding').set(updated, (err) => {
+                    if(!err) { showToast('App Name & Logo updated!'); document.getElementById('adminAppLogoFileInput').value = ''; }
+                    else showToast('Failed to update branding.', 'error');
+                });
+            };
+
+            if (fileInput.files && fileInput.files[0]) {
+                let reader = new FileReader();
+                reader.onload = function(e) { saveBranding(e.target.result); };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else { saveBranding(''); }
+        }
+
+        function openComplainModal() { document.getElementById('complainModal').classList.remove('hidden'); }
+        function closeComplainModal() { document.getElementById('complainModal').classList.add('hidden'); }
+        function openChangePasswordModal() { document.getElementById('passwordModal').classList.remove('hidden'); }
+        function closeChangePasswordModal() { document.getElementById('passwordModal').classList.add('hidden'); }
+
+        function flipCard() {
+            const card = document.getElementById("authCard");
+            card.classList.toggle("flipped");
+            authMode = card.classList.contains("flipped") ? 'register' : 'login';
+        }
+
+        function togglePassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === "password") { input.type = "text"; icon.classList.remove("fa-eye"); icon.classList.add("fa-eye-slash"); }
+            else { input.type = "password"; icon.classList.remove("fa-eye-slash"); icon.classList.add("fa-eye"); }
+        }
+
+        function listenUsdtSettings() {
+            db.ref('settings/usdt').on('value', (snapshot) => {
+                let val = snapshot.val();
+                if (val) globalUsdtSettings = val;
+                else { globalUsdtSettings = { address: "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE", active: true }; db.ref('settings/usdt').set(globalUsdtSettings); }
+                updateDepositUIState();
+            });
+        }
+
+        function listenGatewaySettings() {
+            db.ref('settings/gateways').on('value', (snapshot) => {
+                let val = snapshot.val();
+                if (val) gatewaySettings = val;
+                else { gatewaySettings = { bkash: true, nagad: true }; db.ref('settings/gateways').set(gatewaySettings); }
+                updateGatewayUIState();
+            });
+        }
+
+        function updateGatewayUIState() {
+            const bBtn = document.getElementById('adminBkashStatusBtn');
+            const nBtn = document.getElementById('adminNagadStatusBtn');
+            if(bBtn) {
+                bBtn.className = gatewaySettings.bkash ? 'px-3 py-1 rounded-lg text-xs font-bold transition bg-emerald-600 text-white' : 'px-3 py-1 rounded-lg text-xs font-bold transition bg-rose-600 text-white';
+                bBtn.innerText = gatewaySettings.bkash ? 'Online' : 'Offline';
+            }
+            if(nBtn) {
+                nBtn.className = gatewaySettings.nagad ? 'px-3 py-1 rounded-lg text-xs font-bold transition bg-emerald-600 text-white' : 'px-3 py-1 rounded-lg text-xs font-bold transition bg-rose-600 text-white';
+                bBtn.innerText = gatewaySettings.nagad ? 'Online' : 'Offline';
+            }
+        }
+
+        function toggleGatewayStatus(gateway) {
+            if(gateway === 'bkash') gatewaySettings.bkash = !gatewaySettings.bkash;
+            else if(gateway === 'nagad') gatewaySettings.nagad = !gatewaySettings.nagad;
+            db.ref('settings/gateways').set(gatewaySettings, (err) => { if(!err) showToast(`Gateway status updated!`); });
+        }
+
+        function updateDepositUIState() {
+            document.getElementById('displayUsdtWallet').innerText = globalUsdtSettings.address;
+            const formContainer = document.getElementById('depositFormContainer');
+            const closedNotice = document.getElementById('depositClosedNotice');
+            
+            if (globalUsdtSettings.active) { formContainer.classList.remove('hidden'); closedNotice.classList.add('hidden'); }
+            else { formContainer.classList.add('hidden'); closedNotice.classList.remove('hidden'); }
+
+            const toggleBtn = document.getElementById('adminDepositToggleBtn');
+            const walletInput = document.getElementById('adminUsdtWalletInput');
+            if (toggleBtn) {
+                if (globalUsdtSettings.active) { toggleBtn.className = 'px-4 py-1.5 rounded-lg text-xs font-bold transition bg-emerald-600 text-white'; toggleBtn.innerText = 'Active (ON)'; }
+                else { toggleBtn.className = 'px-4 py-1.5 rounded-lg text-xs font-bold transition bg-rose-600 text-white'; toggleBtn.innerText = 'Inactive (OFF)'; }
+            }
+            if (walletInput && document.activeElement !== walletInput) walletInput.value = globalUsdtSettings.address;
+        }
+
+        function toggleDepositSystem() {
+            let newStatus = !globalUsdtSettings.active;
+            db.ref('settings/usdt/active').set(newStatus, (err) => { if(!err) showToast(`USDT deposit system is now ${newStatus ? 'ON' : 'OFF'}.`); });
+        }
+
+        function updateUsdtWalletAddress() {
+            let newAddress = document.getElementById('adminUsdtWalletInput').value.trim();
+            if(!newAddress) { showToast('Please enter a valid USDT address!', 'error'); return; }
+            db.ref('settings/usdt/address').set(newAddress, (err) => { if(!err) showToast('USDT address updated!'); });
+        }
+
+        function copyUsdtAddress() {
+            navigator.clipboard.writeText(globalUsdtSettings.address);
+            showToast('USDT address copied to clipboard!');
+        }
+
+        function submitUsdtDeposit() {
+            let usdtAmount = parseFloat(document.getElementById('depositUsdtAmount').value);
+            let txId = document.getElementById('depositTxId').value.trim();
+            const RATE = 118;
+
+            if(isNaN(usdtAmount) || usdtAmount <= 0 || !txId) { showToast('Please enter valid USDT amount and TxID!', 'error'); return; }
+
+            let bdtAmount = usdtAmount * RATE;
+            let depId = 'dep_' + Date.now();
+            let depData = { depId: depId, user: userDataCache.email || userDataCache.phone, usdtAmount: usdtAmount, bdtAmount: bdtAmount, txId: txId, status: 'Pending', time: new Date().toLocaleString() };
+
+            db.ref('deposits/' + depId).set(depData, (err) => {
+                if(!err) {
+                    showToast('USDT deposit request submitted!');
+                    document.getElementById('depositUsdtAmount').value = '';
+                    document.getElementById('depositTxId').value = '';
+                    loadUserHistory();
+                } else showToast('Failed to submit deposit.', 'error');
+            });
+        }
+
+        function submitUserComplaint() {
+            let subject = document.getElementById('complainSubject').value.trim();
+            let message = document.getElementById('complainMessage').value.trim();
+
+            if (!subject || !message) { showToast('Please fill out subject and details!', 'error'); return; }
+
+            let compId = 'comp_' + Date.now();
+            let complaintData = { compId: compId, user: userDataCache.email || userDataCache.phone, subject: subject, message: message, status: 'Open', time: new Date().toLocaleString() };
+
+            db.ref('complaints/' + compId).set(complaintData, (err) => {
+                if (!err) {
+                    showToast('Complaint submitted successfully!');
+                    document.getElementById('complainSubject').value = '';
+                    document.getElementById('complainMessage').value = '';
+                    closeComplainModal();
+                } else showToast('Failed to submit complaint.', 'error');
+            });
+        }
+
+        function listenTasksFromFirebase() {
+            db.ref('active_tasks').on('value', (snapshot) => {
+                let data = snapshot.val();
+                tasks = [];
+                let currentTime = Date.now();
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        let t = data[key];
+                        let createdAt = t.createdAt || currentTime;
+                        let elapsed = currentTime - createdAt;
+                        let remainingTime = 300000 - elapsed;
+
+                        if (remainingTime <= 0) {
+                            db.ref('active_tasks/' + key).remove();
+                        } else {
+                            let totalGet = parseFloat((t.amount + t.commission).toFixed(2));
+                            tasks.push({ 
+                                firebaseKey: key, 
+                                id: t.taskId || 1, 
+                                amount: t.amount, 
+                                method: t.method, 
+                                logo: t.logo || '', 
+                                number: t.number, 
+                                commission: t.commission, 
+                                totalGet: totalGet, 
+                                lockedBy: t.lockedBy || null,
+                                createdAt: createdAt,
+                                expireAt: createdAt + 300000
+                            });
+                        }
+                    });
+                }
+                checkUserSubmissionsAndLoadTasks();
+                renderAdminActiveTasks();
+            });
+        }
+
+        function adminCreateOrUpdateTask() {
+            let method = document.getElementById('adminTaskMethod').value;
+            let logoFileInput = document.getElementById('adminTaskLogoFileInput');
+            let number = document.getElementById('adminTaskNumber').value.trim();
+            let amount = parseFloat(document.getElementById('adminTaskAmount').value);
+            let commission = parseFloat(document.getElementById('adminTaskCommission').value);
+            let editingKey = document.getElementById('editingTaskKey').value;
+
+            if (!number || isNaN(amount) || isNaN(commission)) { showToast('Please fill up all fields!', 'error'); return; }
+
+            let processSaveTask = (logoBase64) => {
+                let taskKey = editingKey ? editingKey : ('task_' + Date.now());
+                let taskId = editingKey ? parseInt(editingKey.split('_')[1]) || Math.floor(Math.random() * 9000 + 1000) : Math.floor(Math.random() * 9000 + 1000);
+                
+                db.ref('active_tasks/' + taskKey).once('value', (snap) => {
+                    let existing = snap.val() || {};
+                    let newTask = { 
+                        taskId: existing.taskId || taskId, 
+                        method: method, 
+                        logo: logoBase64 || existing.logo || '', 
+                        number: number, 
+                        amount: amount, 
+                        commission: commission, 
+                        time: existing.time || new Date().toLocaleString(), 
+                        lockedBy: existing.lockedBy || null,
+                        createdAt: existing.createdAt || Date.now()
+                    };
+
+                    db.ref('active_tasks/' + taskKey).set(newTask, (err) => {
+                        if (!err) { showToast(editingKey ? 'Task updated!' : 'New task published with 5 min timer!'); resetAdminTaskForm(); }
+                        else showToast('Failed to save task.', 'error');
+                    });
+                });
+            };
+
+            if (logoFileInput.files && logoFileInput.files[0]) {
+                let reader = new FileReader();
+                reader.onload = function(e) { processSaveTask(e.target.result); };
+                reader.readAsDataURL(logoFileInput.files[0]);
+            } else processSaveTask('');
+        }
+
+        function editAdminTask(key) {
+            db.ref('active_tasks/' + key).once('value', (snap) => {
+                let t = snap.val();
+                if(t) {
+                    document.getElementById('editingTaskKey').value = key;
+                    document.getElementById('adminTaskMethod').value = t.method;
+                    document.getElementById('adminTaskNumber').value = t.number;
+                    document.getElementById('adminTaskAmount').value = t.amount;
+                    document.getElementById('adminTaskCommission').value = t.commission;
+                    document.getElementById('adminTaskFormTitle').innerHTML = '<i class="fa-solid fa-pen-to-square mr-1.5"></i> Edit Active Task';
+                    document.getElementById('adminTaskSubmitBtn').innerText = 'Update Task';
+                    document.getElementById('adminTaskCancelBtn').classList.remove('hidden');
+                }
+            });
+        }
+
+        function deleteAdminTask(key) {
+            if(confirm('Delete this task?')) {
+                db.ref('active_tasks/' + key).remove((err) => { if(!err) showToast('Task deleted!'); });
+            }
+        }
+
+        function resetAdminTaskForm() {
+            document.getElementById('editingTaskKey').value = '';
+            document.getElementById('adminTaskMethod').value = 'bKash';
+            document.getElementById('adminTaskLogoFileInput').value = '';
+            document.getElementById('adminTaskNumber').value = '';
+            document.getElementById('adminTaskAmount').value = '';
+            document.getElementById('adminTaskCommission').value = '';
+            document.getElementById('adminTaskFormTitle').innerHTML = '<i class="fa-solid fa-plus-circle mr-1.5"></i> Create New Task';
+            document.getElementById('adminTaskSubmitBtn').innerText = 'Publish Task Live (5 Min Timer)';
+            document.getElementById('adminTaskCancelBtn').classList.add('hidden');
+        }
+
+        function renderAdminActiveTasks() {
+            const listEl = document.getElementById('adminActiveTaskList');
+            if(!listEl) return;
+            listEl.innerHTML = '';
+            if(tasks.length === 0) { listEl.innerHTML = `<p class="text-xs text-slate-400 bg-white p-4 rounded-2xl border border-slate-200 text-center">No active tasks found.</p>`; return; }
+            tasks.forEach(t => {
+                listEl.innerHTML += `
+                    <div class="bg-white border border-slate-200 p-3 rounded-xl flex justify-between items-center text-xs">
+                        <div>
+                            <p class="font-bold text-slate-900">#${t.id} - ${t.method} (${t.amount} BDT)</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5">Num: ${t.number} | Comm: +${t.commission} BDT</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="editAdminTask('${t.firebaseKey}')" class="bg-slate-100 text-blue-600 px-2.5 py-1.5 rounded-lg font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteAdminTask('${t.firebaseKey}')" class="bg-red-600 text-white px-2.5 py-1.5 rounded-lg font-bold text-[10px]">Delete</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function forgotPasswordAction() { openSupportLink(); }
+
+        function checkPinLockRequirement(userData) {
+            const pinModal = document.getElementById('pinLockModal');
+            const subtitle = document.getElementById('pinLockSubtitle');
+            const btn = document.getElementById('pinActionBtn');
+            const pinInput = document.getElementById('appSecurityPin');
+            pinInput.value = '';
+
+            pinModal.classList.remove('hidden');
+            if(!userData.securityPin) {
+                subtitle.innerText = "Set a 4-digit security PIN for your account protection.";
+                btn.innerText = "Set & Secure App";
+            } else {
+                subtitle.innerText = "Enter your 4-digit security PIN to unlock.";
+                btn.innerText = "Unlock App";
+            }
+        }
+
+        function verifyOrSetAppPin() {
+            const pinInput = document.getElementById('appSecurityPin').value.trim();
+            if(pinInput.length !== 4 || isNaN(pinInput)) {
+                showToast('Please enter a valid 4-digit PIN!', 'error');
+                return;
+            }
+
+            if(!userDataCache.securityPin) {
+                db.ref('users/' + currentUserKey + '/securityPin').set(pinInput, (err) => {
+                    if(!err) {
+                        userDataCache.securityPin = pinInput;
+                        document.getElementById('pinLockModal').classList.add('hidden');
+                        loginSuccessFinal(currentUserKey, userDataCache);
+                    } else showToast('Failed to set PIN.', 'error');
+                });
+            } else {
+                if(pinInput === userDataCache.securityPin) {
+                    document.getElementById('pinLockModal').classList.add('hidden');
+                    loginSuccessFinal(currentUserKey, userDataCache);
+                } else {
+                    showToast('Incorrect security PIN!', 'error');
+                }
+            }
+        }
+
+        function loginSuccessFinal(userKey, userData) {
+            currentUserKey = userKey;
+            userDataCache = userData;
+            
+            localStorage.setItem('gkpay_current_user_key', userKey);
+
+            document.getElementById('profileEmail').innerText = userData.email || userData.phone;
+            document.getElementById('profileUserId').innerText = userData.inviteCode || ('GK_' + userKey.slice(0, 6));
+            document.getElementById('inviteCode').innerText = userData.inviteCode || ('GK_' + userKey.slice(0, 6));
+            
+            populateUserWalletsUI(userData);
+            updateUserTaskCount(userData.email || userData.phone);
+
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            document.getElementById('floatingControls').classList.remove('hidden');
+            
+            db.ref('users/' + userKey).on('value', (snap) => {
+                let val = snap.val();
+                if(val) {
+                    if(val.isBlocked) { showToast('Account blocked!', 'error'); handleLogout(); return; }
+                    userDataCache = val;
+                    updateBalanceUI();
+                    updateReferralDashboard();
+                    populateUserWalletsUI(val);
+                } else { showToast('Account deleted!', 'error'); handleLogout(); }
+            });
+
+            checkUserSubmissionsAndLoadTasks();
+            updateBalanceUI();
+            updateReferralDashboard();
+            loadUserHistory();
+            listenUserNotifications();
+        }
+
+        function loginSuccess(userKey, userData) {
+            loginSuccessFinal(userKey, userData);
+        }
+
+        function updateUserTaskCount(identifier) {
+            db.ref('submissions').orderByChild('user').equalTo(identifier).once('value', (snap) => {
+                let subs = snap.val();
+                let count = 0;
+                if(subs) {
+                    Object.keys(subs).forEach(k => {
+                        if(subs[k].status === 'Approved') count++;
+                    });
+                }
+                let countEl = document.getElementById('userCompletedTaskCount');
+                if(countEl) countEl.innerText = `Completed Tasks: ${count}`;
+            });
+        }
+
+        function populateUserWalletsUI(userData) {
+            if(document.getElementById('userBkashWallet')) document.getElementById('userBkashWallet').value = userData.bkashWallet || '';
+            if(document.getElementById('userNagadWallet')) document.getElementById('userNagadWallet').value = userData.nagadWallet || '';
+            
+            if(document.getElementById('bkashActiveBuy')) document.getElementById('bkashActiveBuy').checked = userData.bkashBuy === true;
+            if(document.getElementById('bkashActiveSell')) document.getElementById('bkashActiveSell').checked = userData.bkashSell === true;
+            
+            if(document.getElementById('nagadActiveBuy')) document.getElementById('nagadActiveBuy').checked = userData.nagadBuy === true;
+            if(document.getElementById('nagadActiveSell')) document.getElementById('nagadActiveSell').checked = userData.nagadSell === true;
+
+            let bkashBadge = document.getElementById('bkashOnlineBadge');
+            let nagadBadge = document.getElementById('nagadOnlineBadge');
+
+            if(userData.bkashWallet && (userData.bkashBuy || userData.bkashSell)) bkashBadge.classList.remove('hidden');
+            else bkashBadge.classList.add('hidden');
+
+            if(userData.nagadWallet && (userData.nagadBuy || userData.nagadSell)) nagadBadge.classList.remove('hidden');
+            else nagadBadge.classList.add('hidden');
+        }
+
+        function bindSingleWallet(type) {
+            if(!currentUserKey) return;
+            let updates = {};
+
+            if(type === 'bkash') updates.bkashWallet = document.getElementById('userBkashWallet').value.trim();
+            else if(type === 'nagad') updates.nagadWallet = document.getElementById('userNagadWallet').value.trim();
+
+            db.ref('users/' + currentUserKey).update(updates, (err) => {
+                if(!err) showToast(`${type.toUpperCase()} number bound successfully!`);
+                else showToast('Failed to bind number.', 'error');
+            });
+        }
+
+        function saveUserWallets() {
+            let bkashNum = document.getElementById('userBkashWallet').value.trim();
+            let nagadNum = document.getElementById('userNagadWallet').value.trim();
+            let bBuy = document.getElementById('bkashActiveBuy').checked;
+            let bSell = document.getElementById('bkashActiveSell').checked;
+            let nBuy = document.getElementById('nagadActiveBuy').checked;
+            let nSell = document.getElementById('nagadActiveSell').checked;
+
+            db.ref('users/' + currentUserKey).update({ bkashWallet: bkashNum, nagadWallet: nagadNum, bkashBuy: bBuy, bkashSell: bSell, nagadBuy: nBuy, nagadSell: nSell }, (err) => {
+                if(!err) showToast('Wallet service status updated!');
+                else showToast('Failed to save status.', 'error');
+            });
+        }
+
+        function updateReferralDashboard() {
+            if(!currentUserKey || !userDataCache.inviteCode) return;
+            let myCode = userDataCache.inviteCode;
+            
+            db.ref('users').once('value', (snapshot) => {
+                let users = snapshot.val();
+                let refCount = 0;
+                if(users) { Object.keys(users).forEach(k => { if(users[k].referredBy === myCode) refCount++; }); }
+                document.getElementById('totalReferralCount').innerText = refCount;
+                document.getElementById('totalReferralEarn').innerText = (userDataCache.commBalance || 0).toFixed(2);
+            });
+        }
+
+        function handleLogout() {
+            releaseActiveTaskLock();
+            currentUserKey = null;
+            userDataCache = {};
+            localStorage.removeItem('gkpay_current_user_key');
+
+            document.getElementById('dashboardSection').classList.add('hidden');
+            document.getElementById('adminSection').classList.add('hidden');
+            document.getElementById('floatingControls').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('loginIdInput').value = '';
+            document.getElementById('loginPass').value = '';
+        }
+
+        function switchTab(tab) {
+            releaseActiveTaskLock();
+            document.getElementById('tabTasks').classList.add('hidden');
+            document.getElementById('tabDeposit').classList.add('hidden');
+            document.getElementById('tabHistory').classList.add('hidden');
+            document.getElementById('tabWallet').classList.add('hidden');
+            document.getElementById('tabAccount').classList.add('hidden');
+
+            ['Tasks', 'Deposit', 'History', 'Wallet', 'Account'].forEach(t => {
+                let btn = document.getElementById('nav' + t + 'Btn');
+                if(btn) btn.className = 'text-slate-400 font-bold text-[10px] flex flex-col items-center space-y-1 transition';
+            });
+
+            if(tab === 'tasks') { 
+                document.getElementById('tabTasks').classList.remove('hidden'); 
+                document.getElementById('navTasksBtn').className = 'text-blue-600 font-extrabold text-[10px] flex flex-col items-center space-y-1 transition'; 
+            }
+            else if(tab === 'deposit') { 
+                document.getElementById('tabDeposit').classList.remove('hidden'); 
+                document.getElementById('navDepositBtn').className = 'text-blue-600 font-extrabold text-[10px] flex flex-col items-center space-y-1 transition'; 
+                updateDepositUIState(); 
+            }
+            else if(tab === 'history') { 
+                document.getElementById('tabHistory').classList.remove('hidden'); 
+                document.getElementById('navHistoryBtn').className = 'text-blue-600 font-extrabold text-[10px] flex flex-col items-center space-y-1 transition'; 
+                loadUserHistory(); 
+            }
+            else if(tab === 'wallet') { 
+                document.getElementById('tabWallet').classList.remove('hidden'); 
+                document.getElementById('navWalletBtn').className = 'text-blue-600 font-extrabold text-[10px] flex flex-col items-center space-y-1 transition'; 
+            }
+            else if(tab === 'account') { 
+                document.getElementById('tabAccount').classList.remove('hidden'); 
+                document.getElementById('navAccountBtn').className = 'text-blue-600 font-extrabold text-[10px] flex flex-col items-center space-y-1 transition'; 
+                updateUserTaskCount(userDataCache.email || userDataCache.phone); 
+            }
+        }
+
+        function filterTasks(category) {
+            currentFilter = category;
+            ['all', '300', '500', '1000', 'other'].forEach(cat => {
+                let btn = document.getElementById('catBtn-' + cat);
+                if(cat === category) btn.className = 'bg-blue-600 text-white py-2 rounded-xl text-[11px] font-bold shadow-sm';
+                else btn.className = 'bg-white border border-slate-200 text-slate-600 py-2 rounded-xl text-[11px] font-bold';
+            });
+            loadTasks();
+        }
+
+        function checkUserSubmissionsAndLoadTasks() {
+            let identifier = userDataCache.email || userDataCache.phone;
+            if (!identifier) { loadTasks(); return; }
+            db.ref('submissions').orderByChild('user').equalTo(identifier).once('value', (snapshot) => {
+                let subs = snapshot.val();
+                let completedNumbers = [];
+                if (subs) Object.keys(subs).forEach(key => { if (subs[key].status === 'Pending' || subs[key].status === 'Approved') completedNumbers.push(subs[key].targetNumber); });
+                submittedTaskNumbers = completedNumbers;
+                loadTasks();
+            });
+        }
+
+        function loadTasks() {
+            const taskListEl = document.getElementById('taskList');
+            taskListEl.innerHTML = '';
+
+            let filteredTasks = tasks.filter(task => {
+                let identifier = userDataCache.email || userDataCache.phone;
+                if (submittedTaskNumbers.includes(task.number)) return false;
+                if (task.lockedBy && task.lockedBy !== identifier) return false;
+                if (task.method === 'bKash' && !gatewaySettings.bkash) return false;
+                if (task.method === 'Nagad' && !gatewaySettings.nagad) return false;
+
+                if(currentFilter === 'all') return true;
+                if(currentFilter === '300') return task.amount === 300;
+                if(currentFilter === '500') return task.amount === 500;
+                if(currentFilter === '1000') return task.amount === 1000;
+                if(currentFilter === 'other') return ![300, 500, 1000].includes(task.amount);
+                return true;
+            });
+
+            if(filteredTasks.length === 0) {
+                taskListEl.innerHTML = `<div class="app-card p-6 text-center"><p class="text-xs text-slate-400 font-medium">No active tasks available right now.</p></div>`;
+                return;
+            }
+
+            filteredTasks.forEach(task => {
+                let isBkash = task.method === 'bKash';
+                let badgeStyle = isBkash ? 'bg-pink-600 text-white' : 'bg-orange-600 text-white';
+                
+                let logoHtml = task.logo 
+                    ? `<img src="${task.logo}" class="w-11 h-11 rounded-xl object-cover border border-slate-200">`
+                    : `<div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-100"><i class="fa-solid fa-bolt"></i></div>`;
+
+                let taskCard = `
+                    <div class="app-card p-4 flex items-center justify-between" id="task_card_${task.firebaseKey}">
+                        <div class="flex items-center space-x-3">
+                            ${logoHtml}
+                            <div>
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="text-xs font-black text-slate-900">Task #${task.id}</span>
+                                    <span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-md ${badgeStyle}">${task.method}</span>
+                                    <span class="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full timer-badge" data-expire="${task.expireAt}">5:00</span>
+                                </div>
+                                <p class="text-xs font-bold text-slate-700 mt-0.5">Send: <span class="text-blue-600 font-extrabold">${task.amount} BDT</span></p>
+                                <p class="text-[11px] text-emerald-600 font-extrabold mt-0.5"><i class="fa-solid fa-circle-check text-[9px] mr-1"></i> Bonus +${task.commission} BDT</p>
+                            </div>
+                        </div>
+                        <button onclick='openTaskByFirebaseKey("${task.firebaseKey}")' class="bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs px-3.5 py-2 rounded-xl font-bold active:scale-95 transition border border-blue-200">Start Task</button>
+                    </div>
+                `;
+                taskListEl.innerHTML += taskCard;
+            });
+        }
+
+        setInterval(() => {
+            let now = Date.now();
+            document.querySelectorAll('.timer-badge').forEach(el => {
+                let expireAt = parseInt(el.getAttribute('data-expire'));
+                let diff = expireAt - now;
+                if (diff <= 0) {
+                    el.innerText = "Expired";
+                    loadTasks();
+                } else {
+                    let minutes = Math.floor(diff / 60000);
+                    let seconds = Math.floor((diff % 60000) / 1000);
+                    el.innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                }
+            });
+        }, 1000);
+
+        function openTaskByFirebaseKey(firebaseKey) {
+            const task = tasks.find(t => t.firebaseKey === firebaseKey);
+            if(!task) return;
+
+            activeOpenedTaskKey = firebaseKey;
+            let identifier = userDataCache.email || userDataCache.phone;
+            db.ref('active_tasks/' + firebaseKey + '/lockedBy').set(identifier);
+
+            const modalContent = document.getElementById('modalContent');
+            let isBkash = task.method === 'bKash';
+            let badgeStyle = isBkash ? 'bg-pink-600 text-white' : 'bg-orange-600 text-white';
+            
+            let appOpenBtnHtml = isBkash 
+                ? `<a href="https://play.google.com/store/apps/details?id=com.bKash.customerapp" target="_blank" class="block w-full bg-pink-600 text-white text-center py-2.5 rounded-xl font-bold text-xs shadow-sm hover:bg-pink-700 transition mb-3"><i class="fa-solid fa-mobile-screen-button mr-1.5"></i> Open bKash App</a>`
+                : `<a href="https://play.google.com/store/apps/details?id=com.konasl.nagad.merchant" target="_blank" class="block w-full bg-orange-600 text-white text-center py-2.5 rounded-xl font-bold text-xs shadow-sm hover:bg-orange-700 transition mb-3"><i class="fa-solid fa-mobile-screen-button mr-1.5"></i> Open Nagad App</a>`;
+
+            modalContent.innerHTML = `
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="px-2.5 py-1 rounded-lg font-bold text-xs uppercase ${badgeStyle}">${task.method}</div>
+                    <div>
+                        <h3 class="font-extrabold text-base text-slate-900">Task #${task.id}</h3>
+                        <p class="text-[11px] text-slate-500 font-medium">Complete transfer and submit TrxID</p>
+                    </div>
+                </div>
+                ${appOpenBtnHtml}
+                <div class="app-inset p-3.5 rounded-xl text-xs space-y-2 mb-4 font-medium">
+                    <div class="flex justify-between"><span class="text-slate-500">Method:</span> <span class="font-bold ${isBkash ? 'text-pink-600' : 'text-orange-600'}">${task.method}</span></div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500">Target Account:</span> 
+                        <div class="flex items-center space-x-2">
+                            <span class="select-all font-mono font-bold text-slate-900">${task.number}</span>
+                            <button onclick="navigator.clipboard.writeText('${task.number}');showToast('Copied to clipboard!');" class="bg-white border border-slate-200 text-blue-600 px-2.5 py-1 rounded text-[10px] font-bold shadow-sm"><i class="fa-regular fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between"><span class="text-slate-500">Send Amount:</span> <span class="font-bold text-slate-900">${task.amount} BDT</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Reward Bonus:</span> <span class="text-emerald-600 font-bold">+${task.commission} BDT</span></div>
+                    <hr class="border-slate-200">
+                    <div class="flex justify-between text-xs"><span class="font-bold text-slate-700">Total Return:</span> <span class="text-blue-600 font-extrabold">${task.totalGet} BDT</span></div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">TrxID / Proof Info</label>
+                    <input type="text" id="trxIdInput" placeholder="Enter Transaction ID" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600">
+                </div>
+                <button onclick="submitTask('${task.firebaseKey}')" class="main-btn">Submit Task Proof</button>
+            `;
+            document.getElementById('taskModal').classList.remove('hidden');
+        }
+
+        function closeModal() { releaseActiveTaskLock(); document.getElementById('taskModal').classList.add('hidden'); }
+        function releaseActiveTaskLock() {
+            if (activeOpenedTaskKey) { db.ref('active_tasks/' + activeOpenedTaskKey + '/lockedBy').set(null); activeOpenedTaskKey = null; }
+        }
+
+        function submitTask(firebaseKey) {
+            const task = tasks.find(t => t.firebaseKey === firebaseKey);
+            const trxId = document.getElementById('trxIdInput').value.trim();
+
+            if(!trxId || trxId.length < 8) { showToast('Please enter a valid TrxID!', 'error'); return; }
+
+            db.ref('submissions').once('value', (snapshot) => {
+                let allSubs = snapshot.val();
+                let identifier = userDataCache.email || userDataCache.phone;
+                let isDuplicate = false;
+                if(allSubs) { Object.keys(allSubs).forEach(key => { if(allSubs[key].trxId && allSubs[key].trxId.toLowerCase() === trxId.toLowerCase()) isDuplicate = true; }); }
+
+                if(isDuplicate) { showToast('Error: TrxID already used!', 'error'); return; }
+
+                let subId = 'sub_' + Date.now();
+                let submissionData = { subId: subId, user: identifier, taskId: task.id, method: task.method, targetNumber: task.number, amount: task.amount, commission: task.commission, totalGet: task.totalGet, trxId: trxId, status: 'Pending', time: new Date().toLocaleString() };
+
+                db.ref('submissions/' + subId).set(submissionData, (err) => {
+                    if(!err) {
+                        showToast('Task proof submitted successfully!');
+                        activeOpenedTaskKey = null;
+                        db.ref('active_tasks/' + firebaseKey).remove();
+                        closeModal();
+                        loadUserHistory();
+                        checkUserSubmissionsAndLoadTasks();
+                        updateUserTaskCount(identifier);
+                    } else showToast('Failed to submit task.', 'error');
+                });
+            });
+        }
+
+        function updateUserPassword() {
+            let oldPass = document.getElementById('oldPassInput').value.trim();
+            let newPass = document.getElementById('newPassInput').value.trim();
+
+            if(!oldPass || !newPass) { showToast('Fill all fields!', 'error'); return; }
+            if(oldPass !== userDataCache.password) { showToast('Incorrect old password!', 'error'); return; }
+
+            db.ref('users/' + currentUserKey + '/password').set(newPass, (err) => {
+                if(!err) { userDataCache.password = newPass; showToast('Password updated successfully!'); closeChangePasswordModal(); }
+                else showToast('Failed to update password.', 'error');
+            });
+        }
+
+        function loadUserHistory() {
+            const historyListEl = document.getElementById('userHistoryList');
+            const depositHistoryListEl = document.getElementById('userDepositHistoryList');
+            const sellHistoryListEl = document.getElementById('userSellHistoryList');
+            let identifier = userDataCache.email || userDataCache.phone;
+            if(!identifier) return;
+
+            db.ref('submissions').orderByChild('user').equalTo(identifier).once('value', (snapshot) => {
+                historyListEl.innerHTML = '';
+                let data = snapshot.val();
+
+                if(!data) { historyListEl.innerHTML = `<div class="app-card p-4 text-center"><p class="text-xs text-slate-400 font-medium">No task history found.</p></div>`; }
+                else {
+                    Object.keys(data).reverse().forEach(key => {
+                        let item = data[key];
+                        let badgeColor = item.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : item.status === 'Rejected' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-amber-50 text-amber-600 border border-amber-200';
+                        let isBkash = item.method === 'bKash';
+                        let badgeStyle = isBkash ? 'bg-pink-600 text-white' : 'bg-orange-600 text-white';
+
+                        let card = `
+                            <div class="app-card p-4 space-y-1.5">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="px-2 py-0.5 rounded text-[9px] font-bold uppercase ${badgeStyle}">${item.method}</div>
+                                        <span class="text-xs font-extrabold text-slate-900">Task #${item.taskId}</span>
+                                    </div>
+                                    <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full ${badgeColor}">${item.status}</span>
+                                </div>
+                                <div class="text-xs text-slate-500 space-y-1 pt-1 border-t border-slate-100 font-medium">
+                                    <div class="flex justify-between"><span>Send Number:</span> <span class="font-bold text-amber-600">${item.targetNumber || 'N/A'}</span></div>
+                                    <div class="flex justify-between"><span>Amount Sent:</span> <span class="font-bold text-slate-900">${item.amount} BDT</span></div>
+                                    <div class="flex justify-between"><span>Reward Bonus:</span> <span class="font-bold text-emerald-600">+${item.commission} BDT</span></div>
+                                    <div class="flex justify-between"><span>TrxID:</span> <span class="font-bold text-slate-900">${item.trxId}</span></div>
+                                    <div class="flex justify-between text-[10px] text-slate-400 pt-0.5"><span>Time:</span> <span>${item.time}</span></div>
+                                </div>
+                            </div>`;
+                        historyListEl.innerHTML += card;
+                    });
+                }
+            });
+
+            db.ref('sell_history').orderByChild('user').equalTo(identifier).once('value', (snapshot) => {
+                sellHistoryListEl.innerHTML = '';
+                let data = snapshot.val();
+                if(!data) { sellHistoryListEl.innerHTML = `<div class="app-card p-4 text-center"><p class="text-xs text-slate-400 font-medium">No sell history found.</p></div>`; }
+                else {
+                    Object.keys(data).reverse().forEach(key => {
+                        let s = data[key];
+                        let methodDisplay = s.method ? ` (${s.method})` : '';
+                        sellHistoryListEl.innerHTML += `
+                            <div class="app-card p-4 space-y-1.5 border-l-4 border-amber-500">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-600 text-white">Sell Request${methodDisplay}</div>
+                                        <span class="text-xs font-extrabold text-slate-900">${s.amount} BDT</span>
+                                    </div>
+                                    <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">Completed</span>
+                                </div>
+                                <div class="text-xs text-slate-500 space-y-1 pt-1 border-t border-slate-100 font-medium">
+                                    <div class="flex justify-between"><span>Sell Number:</span> <span class="font-bold text-blue-600 font-mono">${s.sellNumber}</span></div>
+                                    <div class="flex justify-between text-[10px] text-slate-400 pt-0.5"><span>Time:</span> <span>${s.time}</span></div>
+                                </div>
+                            </div>`;
+                    });
+                }
+            });
+
+            db.ref('deposits').orderByChild('user').equalTo(identifier).once('value', (snapshot) => {
+                depositHistoryListEl.innerHTML = '';
+                let data = snapshot.val();
+
+                if(!data) { depositHistoryListEl.innerHTML = `<div class="app-card p-4 text-center"><p class="text-xs text-slate-400 font-medium">No deposit history found.</p></div>`; }
+                else {
+                    Object.keys(data).reverse().forEach(key => {
+                        let d = data[key];
+                        let badgeColor = d.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : d.status === 'Rejected' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-amber-50 text-amber-600 border border-amber-200';
+
+                        let card = `
+                            <div class="app-card p-4 space-y-1.5">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-blue-600 text-white">USDT Deposit</div>
+                                        <span class="text-xs font-extrabold text-slate-900">${d.usdtAmount} USDT</span>
+                                    </div>
+                                    <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full ${badgeColor}">${d.status}</span>
+                                </div>
+                                <div class="text-xs text-slate-500 space-y-1 pt-1 border-t border-slate-100 font-medium">
+                                    <div class="flex justify-between"><span>Received BDT:</span> <span class="font-bold text-emerald-600">${d.bdtAmount} BDT</span></div>
+                                    <div class="flex justify-between"><span>TxID:</span> <span class="font-bold text-slate-900 select-all">${d.txId}</span></div>
+                                    <div class="flex justify-between text-[10px] text-slate-400 pt-0.5"><span>Time:</span> <span>${d.time}</span></div>
+                                </div>
+                            </div>`;
+                        depositHistoryListEl.innerHTML += card;
+                    });
+                }
+            });
+        }
+
+        function copyInviteCode() { navigator.clipboard.writeText(document.getElementById('inviteCode').innerText); showToast('Invite code copied!'); }
+        
+        function shareInviteLink() {
+            let code = document.getElementById('inviteCode').innerText;
+            let name = appBranding.appName || "GK Pay";
+            let cleanOrigin = window.location.origin.includes('htmltoapk') ? 'https://example.com' : window.location.origin;
+            let shareUrl = cleanOrigin + window.location.pathname + '?ref=' + code;
+            let shareText = `Join ${name} using my referral code: ${code}\nLink: ${shareUrl}`;
+            if (navigator.share) {
+                navigator.share({ title: name, text: shareText, url: shareUrl }).catch(() => {});
+            } else { 
+                navigator.clipboard.writeText(shareText); 
+                showToast('Referral link copied to clipboard!'); 
+            }
+        }
+
+        function shareViaTelegram() {
+            let code = document.getElementById('inviteCode').innerText;
+            let name = appBranding.appName || "GK Pay";
+            let cleanOrigin = window.location.origin.includes('htmltoapk') ? 'https://example.com' : window.location.origin;
+            let shareUrl = cleanOrigin + window.location.pathname + '?ref=' + code;
+            let text = encodeURIComponent(`Join ${name} and earn money easily! Use my referral code: ${code}\nLink: ${shareUrl}`);
+            window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${text}`, '_blank');
+        }
+
+        function openSupportLink() { window.open('https://t.me/GK_PAYBD', '_blank'); }
+        function openTelegramGroup() { window.open('https://t.me/GK_PAYBD', '_blank'); }
+
+        function listenUserNotifications() {
+            let identifier = userDataCache.email || userDataCache.phone;
+            db.ref('notifications').on('value', (snapshot) => {
+                let data = snapshot.val();
+                let badge = document.getElementById('notificationBadge');
+                let listEl = document.getElementById('notifModalList');
+                if(!data) { badge.classList.add('hidden'); listEl.innerHTML = `<p class="text-xs text-slate-400 text-center py-6 font-medium">No notifications.</p>`; return; }
+                let keys = Object.keys(data);
+                let readNotifs = JSON.parse(localStorage.getItem('read_notifs_' + identifier) || '[]');
+                let unreadCount = keys.filter(k => !readNotifs.includes(k)).length;
+                if(unreadCount > 0) { badge.innerText = unreadCount; badge.classList.remove('hidden'); } else badge.classList.add('hidden');
+                listEl.innerHTML = '';
+                keys.reverse().forEach(key => {
+                    let n = data[key];
+                    let isRead = readNotifs.includes(key);
+                    listEl.innerHTML += `<div class="${isRead ? 'app-card' : 'app-inset'} p-3.5 rounded-xl space-y-1"><div class="flex justify-between items-center"><h4 class="font-bold text-slate-900 text-xs">${n.title}</h4><span class="user-select-none text-[9px] text-slate-400">${n.time}</span></div><p class="text-xs text-slate-600 font-medium">${n.message}</p></div>`;
+                });
+            });
+        }
+
+        function openNotificationsModal() {
+            document.getElementById('notifModal').classList.remove('hidden');
+            let identifier = userDataCache.email || userDataCache.phone;
+            db.ref('notifications').once('value', (snapshot) => {
+                let data = snapshot.val();
+                if(data) { localStorage.setItem('read_notifs_' + identifier, JSON.stringify(Object.keys(data))); document.getElementById('notificationBadge').classList.add('hidden'); }
+            });
+        }
+        function closeNotificationsModal() { document.getElementById('notifModal').classList.add('hidden'); }
+
+        function updateBalanceUI() {
+            document.getElementById('userCommBalance').innerText = (userDataCache.commBalance || 0).toFixed(2);
+            document.getElementById('userMainBalance').innerText = (userDataCache.mainBalance || 0).toFixed(2);
+        }
+
+        function initAdminPanel() {
+            listenAdminSubmissions();
+            listenAdminDeposits();
+            listenAdminComplaints();
+            listenAdminStats();
+            listenAdminUsersList();
+            renderAdminActiveTasks();
+            updateGatewayUIState();
+            applyAppBrandingUI();
+            applyMaintenanceUI();
+        }
+
+        function listenAdminStats() {
+            db.ref('users').on('value', (snap) => { document.getElementById('adminTotalUsersCount').innerText = snap.val() ? Object.keys(snap.val()).length : 0; });
+            db.ref('submissions').on('value', (snap) => {
+                let subs = snap.val(); let count = 0;
+                if(subs) Object.keys(subs).forEach(k => { if(subs[k].status === 'Pending') count++; });
+                document.getElementById('adminPendingTasksCount').innerText = count;
+            });
+            db.ref('deposits').on('value', (snap) => {
+                let deps = snap.val(); let count = 0;
+                if(deps) Object.keys(deps).forEach(k => { if(deps[k].status === 'Pending') count++; });
+                document.getElementById('adminPendingDepositsCount').innerText = count;
+            });
+        }
+
+        function listenAdminUsersList() {
+            const listEl = document.getElementById('adminUserListContainer');
+            db.ref('users').on('value', (snapshot) => {
+                listEl.innerHTML = '';
+                let users = snapshot.val();
+                if(!users) { listEl.innerHTML = `<p class="text-xs text-slate-400 bg-white p-4 rounded-2xl border border-slate-200 text-center">No users registered.</p>`; return; }
+                Object.keys(users).forEach(safeKey => {
+                    let u = users[safeKey];
+                    let loginInfo = u.email || u.phone || safeKey;
+                    let isBlocked = u.isBlocked === true;
+
+                    let bkashStatus = u.bkashWallet ? `bKash: ${u.bkashWallet}` : 'bKash: None';
+                    let nagadStatus = u.nagadWallet ? `Nagad: ${u.nagadWallet}` : 'Nagad: None';
+
+                    listEl.innerHTML += `
+                        <div class="bg-white border border-slate-200 p-3 rounded-xl flex justify-between items-center text-xs">
+                            <div>
+                                <p class="font-bold text-slate-900"><i class="fa-solid fa-user mr-1 text-blue-600"></i> ${loginInfo} (${u.inviteCode || 'N/A'})</p>
+                                <p class="text-[10px] text-slate-500 mt-0.5">Phone: ${u.phone || 'N/A'} | Main Bal: ${u.mainBalance || 0} BDT | <span class="text-emerald-600 font-bold">Comm: ${u.commBalance || 0} BDT</span></p>
+                                <p class="text-[9px] text-pink-600 font-medium">${bkashStatus} | ${nagadStatus}</p>
+                            </div>
+                            <div class="flex items-center space-x-1.5">
+                                <button onclick="fillAdminLogin('${loginInfo}')" class="bg-slate-100 text-blue-600 px-2 py-1.5 rounded-lg font-bold text-[10px]">Edit</button>
+                                <button onclick="toggleUserBlock('${safeKey}', ${isBlocked})" class="${isBlocked ? 'bg-emerald-600' : 'bg-amber-600'} text-white px-2 py-1.5 rounded-lg font-bold text-[10px]">${isBlocked ? 'Unblock' : 'Block'}</button>
+                                <button onclick="deleteUserByAdmin('${safeKey}')" class="bg-red-600 text-white px-2 py-1.5 rounded-lg font-bold text-[10px]"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>`;
+                });
+            });
+        }
+
+        function deleteUserByAdmin(safeKey) {
+            if(confirm(`PERMANENTLY DELETE user (${safeKey})?`)) {
+                db.ref('users/' + safeKey).remove((err) => { if(!err) showToast('User deleted!'); });
+            }
+        }
+
+        function fillAdminLogin(info) { document.getElementById('adminTargetLogin').value = info; }
+        function toggleUserBlock(safeKey, currentStatus) { db.ref('users/' + safeKey + '/isBlocked').set(!currentStatus); }
+
+        function adminUpdateUserBalance(mode) {
+            let targetInput = document.getElementById('adminTargetLogin').value.trim().toLowerCase();
+            let sellMethod = document.getElementById('adminSellMethod') ? document.getElementById('adminSellMethod').value : 'bKash';
+            let sellNum = document.getElementById('adminSellNumber').value.trim();
+            let addMain = parseFloat(document.getElementById('adminAddMain').value) || 0;
+            let addComm = parseFloat(document.getElementById('adminAddComm').value) || 0;
+            if(!targetInput) { showToast('Enter user Mobile or Gmail!', 'error'); return; }
+
+            db.ref('users').once('value', (snapshot) => {
+                let users = snapshot.val();
+                let targetKey = null;
+                let uData = null;
+
+                if(users) {
+                    Object.keys(users).forEach(k => {
+                        let u = users[k];
+                        if((u.email && u.email.toLowerCase() === targetInput) || (u.phone && u.phone === targetInput)) {
+                            targetKey = k;
+                            uData = u;
+                        }
+                    });
+                }
+
+                if(!uData) { showToast('User not found!', 'error'); return; }
+
+                let newMain = mode === 'zero' ? 0 : (mode === 'plus' ? (uData.mainBalance || 0) + addMain : Math.max(0, (uData.mainBalance || 0) - addMain));
+                let newComm = mode === 'zero' ? 0 : (mode === 'plus' ? (uData.commBalance || 0) + addComm : Math.max(0, (uData.commBalance || 0) - addComm));
+
+                db.ref('users/' + targetKey).update({ mainBalance: newMain, commBalance: newComm }, () => {
+                    if(mode === 'minus' && addMain > 0) {
+                        let sellId = 'sell_' + Date.now();
+                        let sellRecord = {
+                            sellId: sellId,
+                            user: uData.email || uData.phone,
+                            amount: addMain,
+                            method: sellMethod,
+                            sellNumber: sellNum || 'N/A',
+                            time: new Date().toLocaleString()
+                        };
+                        db.ref('sell_history/' + sellId).set(sellRecord);
+                    }
+
+                    showToast('Balance updated successfully!');
+                    document.getElementById('adminTargetLogin').value = '';
+                    document.getElementById('adminSellNumber').value = '';
+                    document.getElementById('adminAddMain').value = '';
+                    document.getElementById('adminAddComm').value = '';
+                });
+            });
+        }
+
+        function listenAdminComplaints() {
+            const listEl = document.getElementById('adminComplaintList');
+            db.ref('complaints').on('value', (snapshot) => {
+                listEl.innerHTML = '';
+                let data = snapshot.val();
+                if (!data) { listEl.innerHTML = `<p class="text-xs text-slate-400 bg-white p-4 rounded-2xl border border-slate-200 text-center">No complaints.</p>`; return; }
+                Object.keys(data).reverse().forEach(key => {
+                    let c = data[key];
+                    listEl.innerHTML += `
+                        <div class="bg-white border border-slate-200 p-3.5 rounded-2xl space-y-1 text-xs">
+                            <div class="flex justify-between items-center border-b border-slate-100 pb-1.5">
+                                <span class="font-bold text-rose-600"><i class="fa-solid fa-user text-xs mr-1"></i> ${c.user}</span>
+                                <span class="text-[9px] text-slate-400">${c.time}</span>
+                            </div>
+                            <p class="font-bold text-slate-900 pt-1">Subject: ${c.subject}</p>
+                            <p class="text-slate-600 text-[11px] bg-slate-50 p-2.5 rounded-xl border border-slate-200 mt-1">${c.message}</p>
+                        </div>`;
+                });
+            });
+        }
+
+        function listenAdminDeposits() {
+            const listEl = document.getElementById('adminDepositList');
+            db.ref('deposits').on('value', (snapshot) => {
+                listEl.innerHTML = '';
+                let data = snapshot.val();
+                if(!data) { listEl.innerHTML = `<p class="text-xs text-slate-400 bg-white p-4 rounded-2xl border border-slate-200 text-center">No pending deposits.</p>`; return; }
+                let pendingCount = 0;
+                Object.keys(data).forEach(key => {
+                    let d = data[key];
+                    if(d.status === 'Pending') {
+                        pendingCount++;
+                        listEl.innerHTML += `
+                            <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2 text-xs">
+                                <p><strong>User:</strong> <span class="text-blue-600">${d.user}</span></p>
+                                <p><strong>Amount:</strong> <span class="text-cyan-600 font-bold">${d.usdtAmount} USDT (${d.bdtAmount} BDT)</span></p>
+                                <p class="text-amber-600 font-bold select-all"><strong>TxID:</strong> ${d.txId}</p>
+                                <div class="flex space-x-2 pt-1">
+                                    <button onclick="approveDeposit('${d.depId}', '${d.user}', ${d.bdtAmount})" class="bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-bold flex-1">Approve</button>
+                                    <button onclick="rejectDeposit('${d.depId}')" class="bg-red-600 text-white px-3 py-1.5 rounded-xl font-bold flex-1">Reject</button>
+                                </div>
+                            </div>`;
+                    }
+                });
+                if(pendingCount === 0) listEl.innerHTML = `<p class="text-xs text-slate-400 bg-white p-4 rounded-2xl border border-slate-200 text-center">No pending deposits.</p>`;
+            });
+        }
+
+        function approveDeposit(depId, username, bdtAmount) {
+            db.ref('deposits/' + depId + '/status').set('Approved', (err) => {
+                if(!err) {
+                    db.ref('users').once('value', (snap) => {
+                        let users = snap.val();
+                        let targetKey = null;
+                        let uData = null;
+                        if(users) {
+                            Object.keys(users).forEach(k => {
+                                let u = users[k];
+                                if(u.email === username || u.phone === username) { targetKey = k; uData = u; }
+                            });
+                        }
+                        if(targetKey && uData) {
+                            let newMain = (uData.mainBalance || 0) + bdtAmount;
+                            db.ref('users/' + targetKey + '/mainBalance').set(newMain, () => { showToast('Deposit Approved!'); });
+                        }
+                    });
+                }
+            });
+        }
+
+        function rejectDeposit(depId) { db.ref('deposits/' + depId + '/status').set('Rejected', () => { showToast('Deposit Rejected.'); }); }
+
+        function listenAdminSubmissions() {
+            const listEl = document.getElementById('adminSubmissionList');
+            db.ref('submissions').on('value', (snapshot) => {
+                listEl.innerHTML = '';
+                let data = snapshot.val();
+                if(!data) { listEl.innerHTML = `<p class="text-xs text-slate-400 bg-white p-4 rounded-2xl border border-slate-200 text-center">No submissions.</p>`; return; }
+                let pendingCount = 0;
+                Object.keys(data).forEach(key => {
+                    let sub = data[key];
+                    if(sub.status === 'Pending') {
+                        pendingCount++;
+                        listEl.innerHTML += `
+                            <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2 text-xs">
+                                <p><strong>User:</strong> <span class="text-blue-600">${sub.user}</span> | <strong>Task #${sub.taskId}</strong></p>
+                                <p><strong>Send Number:</strong> <span class="text-amber-600 font-bold">${sub.targetNumber || 'N/A'}</span></p>
+                                <p><strong>Amount:</strong> ${sub.amount} BDT | <span class="text-emerald-600 font-bold">Comm: +${sub.commission}</span></p>
+                                <p class="text-amber-600 font-bold"><strong>TxID:</strong> ${sub.trxId}</p>
+                                <div class="flex space-x-2 pt-1">
+                                    <button onclick="approveSub('${sub.subId}', '${sub.user}', ${sub.amount}, ${sub.commission})" class="bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-bold flex-1">Approve</button>
+                                    <button onclick="rejectSub('${sub.subId}')" class="bg-red-600 text-white px-3 py-1.5 rounded-xl font-bold flex-1">Reject</button>
+                                </div>
+                            </div>`;
+                    }
+                });
+                if(pendingCount === 0) listEl.innerHTML = `<p class="text-xs text-slate-400 bg-white p-4 rounded-2xl border border-slate-200 text-center">No pending submissions.</p>`;
+            });
+        }
+
+        function approveSub(subId, username, amount, commission) {
+            db.ref('submissions/' + subId + '/status').set('Approved', (err) => {
+                if(!err) {
+                    db.ref('users').once('value', (snap) => {
+                        let users = snap.val();
+                        let targetKey = null;
+                        let uData = null;
+                        if(users) {
+                            Object.keys(users).forEach(k => {
+                                let u = users[k];
+                                if(u.email === username || u.phone === username) { targetKey = k; uData = u; }
+                            });
+                        }
+                        if(targetKey && uData) {
+                            let updatedMain = (uData.mainBalance || 0) + amount;
+                            let updatedComm = (uData.commBalance || 0) + commission;
+                            db.ref('users/' + targetKey + '/mainBalance').set(updatedMain);
+                            db.ref('users/' + targetKey + '/commBalance').set(updatedComm);
+
+                            if(uData.referredBy && uData.referredBy !== 'None') {
+                                Object.keys(users).forEach(refUserKey => {
+                                    let refUser = users[refUserKey];
+                                    if(refUser.inviteCode === uData.referredBy) {
+                                        let refCommBonus = parseFloat((commission * 0.0030).toFixed(2));
+                                        let currentRefComm = refUser.commBalance || 0;
+                                        db.ref('users/' + refUserKey + '/commBalance').set(currentRefComm + refCommBonus);
+                                    }
+                                });
+                            }
+
+                            showToast('Task Approved Successfully!');
+                        }
+                    });
+                }
+            });
+        }
+
+        function rejectSub(subId) { db.ref('submissions/' + subId + '/status').set('Rejected', () => { showToast('Task Rejected.'); }); }
+    </script>
+</body>
+</html>
